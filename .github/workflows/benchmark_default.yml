@@ -45,7 +45,7 @@ jobs:
           path: benchmark.json
 
       - name: Compare JSONs
-        uses: ./
+        uses: ./action
         with:
           json_file: "benchmark.json"
           comparison_json_file: "benchmark.json"
