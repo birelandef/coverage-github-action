@@ -5,7 +5,7 @@ name: Benchmark the default branch
 on:
   push:
     branches:
-      - "main" # replace with however your default branch is named
+      - "test-comment" # replace with however your default branch is named
 
 # A workflow consists of multiple jobs
 jobs:
