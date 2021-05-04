@@ -107,10 +107,10 @@ function run() {
         //     core.setFailed("Can only run on pull requests!");
         //     return;
         // }
-        console.log(github.context.eventName);
         // get the inputs of the action. The "token" input
         // is not defined so far - we will come to it later.
         const githubToken = core.getInput("token");
+        console.log(githubToken);
         const benchmarkFileName = core.getInput("json_file");
         const oldBenchmarkFileName = core.getInput("comparison_json_file");
         // Now read in the files with the function defined above
@@ -131,9 +131,9 @@ function run() {
         // the context does for example also include information
         // in the pull request or repository we are issued from
         const context = github.context;
-        debug('context', JSON.stringify(context));
         const repo = context.repo;
         const pullRequestNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+        console.log(pullRequestNumber);
         // The Octokit is a helper, to interact with
         // the github REST interface.
         // You can look up the REST interface
