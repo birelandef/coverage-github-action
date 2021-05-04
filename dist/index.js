@@ -94,7 +94,6 @@ const debug = (label, message) => {
 // Just remember: we will use a library which has asynchronous
 // functions, so we also need to call them asynchronously.
 function run() {
-    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         // The github module has a member called "context",
         // which always includes information on the action workflow
@@ -132,7 +131,7 @@ function run() {
         // in the pull request or repository we are issued from
         const context = github.context;
         const repo = context.repo;
-        const pullRequestNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+        const pullRequestNumber = 3; //context.payload.pull_request?.number as number;
         console.log(pullRequestNumber);
         // The Octokit is a helper, to interact with
         // the github REST interface.
