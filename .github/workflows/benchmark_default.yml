@@ -27,11 +27,6 @@ jobs:
         # In the last task we upload the benchmark results
         # as artifacts. This will allow us to use them in a different
         # workflow later.
-      - name: Explore
-        run: |
-          pwd
-          ls -l
-        shell: bash
 
       - name: Upload the results
         uses: actions/upload-artifact@v2
@@ -43,9 +38,14 @@ jobs:
         with:
           name: benchmark_results
           path: benchmark.json
+      - name: Explore
+        run: |
+          pwd
+          ls -l
+        shell: bash
 
       - name: Compare JSONs
-        uses: ./action
+        uses: ./
         with:
           json_file: "benchmark.json"
           comparison_json_file: "benchmark.json"
