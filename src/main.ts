@@ -106,7 +106,7 @@ async function run() {
     // in the pull request or repository we are issued from
     const context = github.context;
     const repo = context.repo;
-    const pullRequestNumber = context.payload.pull_request?.number as number;
+    const pullRequestNumber = 3; //context.payload.pull_request?.number as number;
     console.log(pullRequestNumber)
     // The Octokit is a helper, to interact with
     // the github REST interface.
