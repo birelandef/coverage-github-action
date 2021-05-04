@@ -78,11 +78,12 @@ async function run() {
     //     core.setFailed("Can only run on pull requests!");
     //     return;
     // }
-    console.log(github.context.eventName)
+
 
     // get the inputs of the action. The "token" input
     // is not defined so far - we will come to it later.
     const githubToken = core.getInput("token");
+    console.log(githubToken)
     const benchmarkFileName = core.getInput("json_file");
     const oldBenchmarkFileName = core.getInput("comparison_json_file");
 
