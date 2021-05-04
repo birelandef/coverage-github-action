@@ -82,6 +82,12 @@ function createMessage(benchmark, comparisonBenchmark) {
     }
     return message;
 }
+const debug = (label, message) => {
+    console.log('');
+    console.log(`[${label.toUpperCase()}]`);
+    console.log(message);
+    console.log('');
+};
 // Main function of this action: read in the files and produce the comment.
 // The async keyword makes the run function controlled via
 // an event loop - which is beyond the scope of the blog.
@@ -93,16 +99,17 @@ function run() {
         // which always includes information on the action workflow
         // we are currently running in.
         // For example, it let's us check the event that triggered the workflow.
-        if (github.context.eventName !== "pull_request") {
-            // The core module on the other hand let's you get
-            // inputs or create outputs or control the action flow
-            // e.g. by producing a fatal error
-            core.setFailed("Can only run on pull requests!");
-            return;
-        }
+        // if (github.context.eventName !== "pull_request") {
+        //     // The core module on the other hand let's you get
+        //     // inputs or create outputs or control the action flow
+        //     // e.g. by producing a fatal error
+        //     core.setFailed("Can only run on pull requests!");
+        //     return;
+        // }
         // get the inputs of the action. The "token" input
         // is not defined so far - we will come to it later.
         const githubToken = core.getInput("token");
+        console.log(githubToken);
         const benchmarkFileName = core.getInput("json_file");
         const oldBenchmarkFileName = core.getInput("comparison_json_file");
         // Now read in the files with the function defined above
@@ -124,8 +131,8 @@ function run() {
         // in the pull request or repository we are issued from
         const context = github.context;
         const repo = context.repo;
-        // @ts-ignore
-        const pullRequestNumber = context.payload.pull_request.number;
+        const pullRequestNumber = 3; //context.payload.pull_request?.number as number;
+        console.log(pullRequestNumber);
         // The Octokit is a helper, to interact with
         // the github REST interface.
         // You can look up the REST interface
