@@ -54,6 +54,13 @@ function createMessage(benchmark, comparisonBenchmark): string {
     return message;
 }
 
+const debug = (label: string, message: string): void => {
+    console.log('');
+    console.log(`[${label.toUpperCase()}]`);
+    console.log(message);
+    console.log('');
+};
+
 // Main function of this action: read in the files and produce the comment.
 // The async keyword makes the run function controlled via
 // an event loop - which is beyond the scope of the blog.
@@ -97,9 +104,9 @@ async function run() {
     // the context does for example also include information
     // in the pull request or repository we are issued from
     const context = github.context;
+    debug('context', JSON.stringify(context));
     const repo = context.repo;
-    // @ts-ignore
-    const pullRequestNumber = context.payload.pull_request.number;
+    const pullRequestNumber = context.payload.pull_request?.number as number;
 
     // The Octokit is a helper, to interact with
     // the github REST interface.
