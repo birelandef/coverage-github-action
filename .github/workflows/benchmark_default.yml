@@ -28,6 +28,12 @@ jobs:
         # In the last task we upload the benchmark results
         # as artifacts. This will allow us to use them in a different
         # workflow later.
+      - name: Explore
+        run: |
+          pwd
+          ls -l
+        shell: bash
+
       - name: Upload the results
         uses: actions/upload-artifact@v2
         # this is how you pass arguments to the action,
