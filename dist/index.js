@@ -82,12 +82,19 @@ function createMessage(benchmark, comparisonBenchmark) {
     }
     return message;
 }
+const debug = (label, message) => {
+    console.log('');
+    console.log(`[${label.toUpperCase()}]`);
+    console.log(message);
+    console.log('');
+};
 // Main function of this action: read in the files and produce the comment.
 // The async keyword makes the run function controlled via
 // an event loop - which is beyond the scope of the blog.
 // Just remember: we will use a library which has asynchronous
 // functions, so we also need to call them asynchronously.
 function run() {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         // The github module has a member called "context",
         // which always includes information on the action workflow
@@ -124,9 +131,9 @@ function run() {
         // the context does for example also include information
         // in the pull request or repository we are issued from
         const context = github.context;
+        debug('context', JSON.stringify(context));
         const repo = context.repo;
-        // @ts-ignore
-        const pullRequestNumber = context.payload.pull_request.number;
+        const pullRequestNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
         // The Octokit is a helper, to interact with
         // the github REST interface.
         // You can look up the REST interface
