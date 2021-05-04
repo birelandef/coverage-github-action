@@ -10,7 +10,7 @@ on: [push]
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    name: Run the benchmarks
+    name: Run the benchmark
     # Which themselves consist of multiple steps
     steps:
       # Each step can have a name and either references another
