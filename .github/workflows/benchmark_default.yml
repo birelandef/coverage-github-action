@@ -49,6 +49,7 @@ jobs:
         with:
           json_file: "benchmark.json"
           comparison_json_file: "benchmark.json"
+          token: "123"
 
 #      - name: Hello world action step
 #        uses: ./ # Uses an action in the root directory
