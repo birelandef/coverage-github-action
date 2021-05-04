@@ -2,10 +2,9 @@
 # as an artifact.
 name: Benchmark the default branch
 # run this workflow only on new commits on the default branch
-on:
-  push:
-    branches:
-      - "test-comment" # replace with however your default branch is named
+on: [push]
+#    branches:
+#      - "main" # replace with however your default branch is named
 
 # A workflow consists of multiple jobs
 jobs:

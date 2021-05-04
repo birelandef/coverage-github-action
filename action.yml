@@ -1,6 +1,7 @@
 name: 'Comment with Benchmark Result'
 # Here we define the inputs, which can be set
 # from the workflow file and are consumed in our code
+on: [push]
 inputs:
   json_file:
     description: 'Where to find the json output of the benchmark'
@@ -22,6 +23,8 @@ inputs:
     required: true
 # We specify the created dist/index.js file
 # as the entrypoint of our action
+
+
 runs:
   using: 'node12'
   main: 'dist/index.js'
