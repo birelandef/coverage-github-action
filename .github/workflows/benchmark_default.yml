@@ -5,7 +5,7 @@ name: Benchmark the default branch
 on:
   push:
     branches:
-      - "main" # replace with however your default branch is named
+      - "test-comment" # replace with however your default branch is named
 
 # A workflow consists of multiple jobs
 jobs:
@@ -28,6 +28,12 @@ jobs:
         # In the last task we upload the benchmark results
         # as artifacts. This will allow us to use them in a different
         # workflow later.
+      - name: Explore
+        run: |
+          pwd
+          ls -l
+        shell: bash
+
       - name: Upload the results
         uses: actions/upload-artifact@v2
         # this is how you pass arguments to the action,
@@ -38,3 +44,15 @@ jobs:
         with:
           name: benchmark_results
           path: benchmark.json
+
+      - name: Compare JSONs
+        uses: ./
+        with:
+          json_file: "benchmark.json"
+          comparison_json_file: "benchmark.json"
+
+#      - name: Hello world action step
+#        uses: ./ # Uses an action in the root directory
+#        id: hello
+#        with:
+#          who-to-greet: 'Mona the Octocat'
