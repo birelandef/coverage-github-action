@@ -44,3 +44,15 @@ jobs:
         with:
           name: benchmark_results
           path: benchmark.json
+
+      - name: Compare JSONs
+        uses: birelandef/coverage-github-action@v1
+        with:
+          json_file: "benchmark.json"
+          comparison_json_file: "benchmark.json"
+
+#      - name: Hello world action step
+#        uses: ./ # Uses an action in the root directory
+#        id: hello
+#        with:
+#          who-to-greet: 'Mona the Octocat'
