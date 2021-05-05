@@ -27,21 +27,16 @@ jobs:
         # as artifacts. This will allow us to use them in a different
         # workflow later.
 
-      - name: Upload the results
-        uses: actions/upload-artifact@v2
-        # this is how you pass arguments to the action,
-        # in this case the arguments "name" and "path".
-        # You can lookup what these arguments do
-        # in the task repository:
-        # https://github.com/actions/upload-artifact
-        with:
-          name: benchmark_results
-          path: benchmark.json
-
       - name: Explore
         run: |
-          git diff --name-only origin/master
+          git diff --name-only origin/master --output=master.diff
         shell: bash
+
+      - name: Upload the results
+        uses: actions/upload-artifact@v2
+        with:
+          name: changed_files
+          path: master.diff
 
       - name: Compare JSONs
         uses: ./
