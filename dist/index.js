@@ -88,25 +88,32 @@ function createMessage(benchmark, comparisonBenchmark) {
 // Just remember: we will use a library which has asynchronous
 // functions, so we also need to call them asynchronously.
 function run() {
-    var _a;
+    var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
         // The github module has a member called "context",
         // which always includes information on the action workflow
         // we are currently running in.
         // For example, it let's us check the event that triggered the workflow.
-        // if (github.context.eventName !== "pull_request") {
-        //     // The core module on the other hand let's you get
-        //     // inputs or create outputs or control the action flow
-        //     // e.g. by producing a fatal error
-        //     core.setFailed("Can only run on pull requests!");
-        //     return;
-        // }
+        let base;
+        let head;
+        const context = github.context;
+        if (github.context.eventName !== "pull_request") {
+            // The core module on the other hand let's you get
+            // inputs or create outputs or control the action flow
+            // e.g. by producing a fatal error
+            core.setFailed("Can only run on pull requests!");
+            return;
+        }
+        else {
+            base = (_b = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.base) === null || _b === void 0 ? void 0 : _b.sha;
+            head = (_d = (_c = context.payload.pull_request) === null || _c === void 0 ? void 0 : _c.head) === null || _d === void 0 ? void 0 : _d.sha;
+        }
         // get the inputs of the action. The "token" input
         // is not defined so far - we will come to it later.
         const githubToken = core.getInput("token");
         console.log(githubToken);
-        const benchmarkFileName = core.getInput("json_file");
-        const oldBenchmarkFileName = core.getInput("comparison_json_file");
+        const benchmarkFileName = core.getInput("json_file", { required: true });
+        const oldBenchmarkFileName = core.getInput("comparison_json_file", { required: true });
         // Now read in the files with the function defined above
         const benchmarks = readJSON(benchmarkFileName);
         let oldBenchmarks = undefined;
@@ -124,28 +131,37 @@ function run() {
         console.log(message);
         // the context does for example also include information
         // in the pull request or repository we are issued from
-        const context = github.context;
         const repo = context.repo;
-        const pullRequestNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+        const pullRequestNumber = (_e = context.payload.pull_request) === null || _e === void 0 ? void 0 : _e.number;
         console.log(pullRequestNumber);
         // The Octokit is a helper, to interact with
         // the github REST interface.
         // You can look up the REST interface
         // here: https://octokit.github.io/rest.js/v18
         const octokit = github.getOctokit(githubToken);
+        core.info(`Base commit: ${base}`);
+        core.info(`Head commit: ${head}`);
+        const response = yield octokit.repos.compareCommits({
+            base,
+            head,
+            owner: context.repo.owner,
+            repo: context.repo.repo
+        });
         // Get all comments we currently have...
         // (this is an asynchronous function)
         const { data: comments } = yield octokit.issues.listComments(Object.assign(Object.assign({}, repo), { issue_number: pullRequestNumber }));
-        const changedFiles = yield octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}/files', {
-            owner: 'birelandef',
-            repo: 'coverage-github-action',
-            pull_number: pullRequestNumber
+        const changedFiles = yield octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
+            owner: "birelandef",
+            repo: "coverage-github-action",
+            pull_number: pullRequestNumber,
         });
         console.log(changedFiles);
         // ... and check if there is already a comment by us
         const comment = comments.find((comment) => {
-            return (comment.user != null && comment.user.login === "github-actions[bot]" &&
-                comment.body != null && comment.body.startsWith("## Coverage report\n"));
+            return (comment.user != null &&
+                comment.user.login === "github-actions[bot]" &&
+                comment.body != null &&
+                comment.body.startsWith("## Coverage report\n"));
         });
         // If yes, update that
         if (comment) {
@@ -158,7 +174,7 @@ function run() {
     });
 }
 // Our main method: call the run() function and report any errors
-run().catch(error => core.setFailed("Workflow failed! " + error.message));
+run().catch((error) => core.setFailed("Workflow failed! " + error.message));
 
 
 /***/ }),
