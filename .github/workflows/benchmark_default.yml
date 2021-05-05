@@ -7,38 +7,25 @@ on: [pull_request]
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    name: Run the benchmark
-    # Which themselves consist of multiple steps
+    name: Run the coverage
     steps:
-      # Each step can have a name and either references another
-      # github repository (as in this case) or a docker image (not shown).
-      # Please note that all references must have a version tag,
-      # which forces you to pin your versions (good!)
-      # The first task just clones your repository into the
-      # work area of the workflow
       - name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-        # Normally you would produce the benchmark output here
-
-        # In the last task we upload the benchmark results
-        # as artifacts. This will allow us to use them in a different
-        # workflow later.
-
-      - name: Explore
+      - name: Changed files
         run: |
           git diff --name-only origin/master --output=master.diff
         shell: bash
 
-      - name: Upload the results
+      - name: Upload changed files
         uses: actions/upload-artifact@v2
         with:
           name: changed_files
           path: master.diff
 
-      - name: Compare JSONs
+      - name: Report
         uses: ./
         with:
           json_file: "benchmark.json"
