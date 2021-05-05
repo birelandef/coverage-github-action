@@ -112,8 +112,6 @@ async function run() {
     // You can look up the REST interface
     // here: https://octokit.github.io/rest.js/v18
     const octokit = github.getOctokit(githubToken);
-    core.info(`Base commit: ${base}`)
-    core.info(`Head commit: ${head}`)
 
     const response = await octokit.repos.compareCommits({
         base,
@@ -131,16 +129,6 @@ async function run() {
         ...repo,
         issue_number: pullRequestNumber,
     });
-
-    // const changedFiles = await octokit.request(
-    //     "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
-    //     {
-    //         owner: "birelandef",
-    //         repo: "coverage-github-action",
-    //         pull_number: pullRequestNumber,
-    //     }
-    // );
-    // console.log(changedFiles);
 
     // ... and check if there is already a comment by us
     const comment = comments.find((comment) => {
