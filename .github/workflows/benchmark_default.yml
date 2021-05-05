@@ -2,7 +2,7 @@
 # as an artifact.
 name: Benchmark the default branch
 # run this workflow only on new commits on the default branch
-on: [push, pull_request]
+on: [pull_request]
 #    branches:
 #      - "main" # replace with however your default branch is named
 
