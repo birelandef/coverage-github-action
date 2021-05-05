@@ -54,7 +54,7 @@ function readJSON(filename) {
 }
 // Create a markdown message from the two JSON.
 function createMessage(benchmark, comparisonBenchmark) {
-    let message = "## Result of Benchmark Tests\n";
+    let message = "## Coverage report\n";
     // Table Title
     message += "| Key | Current PR | Default Branch |\n";
     // Table Column Definitions
@@ -82,12 +82,6 @@ function createMessage(benchmark, comparisonBenchmark) {
     }
     return message;
 }
-const debug = (label, message) => {
-    console.log('');
-    console.log(`[${label.toUpperCase()}]`);
-    console.log(message);
-    console.log('');
-};
 // Main function of this action: read in the files and produce the comment.
 // The async keyword makes the run function controlled via
 // an event loop - which is beyond the scope of the blog.
@@ -142,10 +136,16 @@ function run() {
         // Get all comments we currently have...
         // (this is an asynchronous function)
         const { data: comments } = yield octokit.issues.listComments(Object.assign(Object.assign({}, repo), { issue_number: pullRequestNumber }));
+        const changedFiles = yield octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}/files', {
+            owner: 'birelandef',
+            repo: 'coverage-github-action',
+            pull_number: pullRequestNumber
+        });
+        console.log(changedFiles);
         // ... and check if there is already a comment by us
         const comment = comments.find((comment) => {
             return (comment.user != null && comment.user.login === "github-actions[bot]" &&
-                comment.body != null && comment.body.startsWith("## Result of Benchmark Tests\n"));
+                comment.body != null && comment.body.startsWith("## Coverage report\n"));
         });
         // If yes, update that
         if (comment) {
