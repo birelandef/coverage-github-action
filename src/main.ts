@@ -4,8 +4,8 @@
 // You do not need to install this dependency, it is part of the
 // standard library.
 const fs = require("fs");
-import * as core from '@actions/core';
-import * as github from '@actions/github'
+import * as core from "@actions/core";
+import * as github from "@actions/github";
 
 // Function to read and parse a JSON
 function readJSON(filename: string) {
@@ -17,10 +17,9 @@ function readJSON(filename: string) {
     return benchmarkJSON;
 }
 
-
 // Create a markdown message from the two JSON.
 function createMessage(benchmark, comparisonBenchmark): string {
-    let message = "## Result of Benchmark Tests\n";
+    let message = "## Coverage report\n";
 
     // Table Title
     message += "| Key | Current PR | Default Branch |\n";
@@ -45,7 +44,7 @@ function createMessage(benchmark, comparisonBenchmark): string {
             const oldValue = comparisonBenchmark[key];
             message += `| ${oldValue.toFixed(2)}`;
         } catch (error) {
-            console.log("Can not read key", key, "from the comparison file.")
+            console.log("Can not read key", key, "from the comparison file.");
             message += "| ";
         }
         message += "| \n";
@@ -53,13 +52,6 @@ function createMessage(benchmark, comparisonBenchmark): string {
 
     return message;
 }
-
-const debug = (label: string, message: string): void => {
-    console.log('');
-    console.log(`[${label.toUpperCase()}]`);
-    console.log(message);
-    console.log('');
-};
 
 // Main function of this action: read in the files and produce the comment.
 // The async keyword makes the run function controlled via
@@ -71,21 +63,28 @@ async function run() {
     // which always includes information on the action workflow
     // we are currently running in.
     // For example, it let's us check the event that triggered the workflow.
-    // if (github.context.eventName !== "pull_request") {
-    //     // The core module on the other hand let's you get
-    //     // inputs or create outputs or control the action flow
-    //     // e.g. by producing a fatal error
-    //     core.setFailed("Can only run on pull requests!");
-    //     return;
-    // }
 
+    let base: string
+    let head: string
+
+    const context = github.context;
+    if (github.context.eventName !== "pull_request") {
+        // The core module on the other hand let's you get
+        // inputs or create outputs or control the action flow
+        // e.g. by producing a fatal error
+        core.setFailed("Can only run on pull requests!");
+        return;
+    } else {
+        base = context.payload.pull_request?.base?.sha
+        head = context.payload.pull_request?.head?.sha
+    }
 
     // get the inputs of the action. The "token" input
     // is not defined so far - we will come to it later.
     const githubToken = core.getInput("token");
-    console.log(githubToken)
-    const benchmarkFileName = core.getInput("json_file");
-    const oldBenchmarkFileName = core.getInput("comparison_json_file");
+    console.log(githubToken);
+    const benchmarkFileName = core.getInput("json_file", {required: true});
+    const oldBenchmarkFileName = core.getInput("comparison_json_file", {required: true});
 
     // Now read in the files with the function defined above
     const benchmarks = readJSON(benchmarkFileName);
@@ -104,15 +103,25 @@ async function run() {
 
     // the context does for example also include information
     // in the pull request or repository we are issued from
-    const context = github.context;
+
     const repo = context.repo;
     const pullRequestNumber = context.payload.pull_request?.number as number;
-    console.log(pullRequestNumber)
+    console.log(pullRequestNumber);
     // The Octokit is a helper, to interact with
     // the github REST interface.
     // You can look up the REST interface
     // here: https://octokit.github.io/rest.js/v18
     const octokit = github.getOctokit(githubToken);
+
+    const response = await octokit.repos.compareCommits({
+        base,
+        head,
+        owner: context.repo.owner,
+        repo: context.repo.repo
+    })
+    // @ts-ignore
+    const files = response.data.files.map(y => y.filename)
+    console.log(files)
 
     // Get all comments we currently have...
     // (this is an asynchronous function)
@@ -124,8 +133,10 @@ async function run() {
     // ... and check if there is already a comment by us
     const comment = comments.find((comment) => {
         return (
-            comment.user != null && comment.user.login === "github-actions[bot]" &&
-            comment.body != null && comment.body.startsWith("## Result of Benchmark Tests\n")
+            comment.user != null &&
+            comment.user.login === "github-actions[bot]" &&
+            comment.body != null &&
+            comment.body.startsWith("## Coverage report\n")
         );
     });
 
@@ -134,17 +145,17 @@ async function run() {
         await octokit.issues.updateComment({
             ...repo,
             comment_id: comment.id,
-            body: message
+            body: message,
         });
         // if not, create a new comment
     } else {
         await octokit.issues.createComment({
             ...repo,
             issue_number: pullRequestNumber,
-            body: message
+            body: message,
         });
     }
 }
 
 // Our main method: call the run() function and report any errors
-run().catch(error => core.setFailed("Workflow failed! " + error.message));
+run().catch((error) => core.setFailed("Workflow failed! " + error.message));
