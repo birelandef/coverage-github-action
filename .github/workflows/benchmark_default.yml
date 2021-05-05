@@ -38,6 +38,11 @@ jobs:
           name: benchmark_results
           path: benchmark.json
 
+      - name: Explore
+        run: |
+          git diff --name-only master
+        shell: bash
+
       - name: Compare JSONs
         uses: ./
         with:
