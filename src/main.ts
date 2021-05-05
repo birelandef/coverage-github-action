@@ -121,6 +121,9 @@ async function run() {
         owner: context.repo.owner,
         repo: context.repo.repo
     })
+    // @ts-ignore
+    const files = response.data.files.map(y => y.filename)
+    console.log(files)
 
     // Get all comments we currently have...
     // (this is an asynchronous function)
@@ -129,15 +132,15 @@ async function run() {
         issue_number: pullRequestNumber,
     });
 
-    const changedFiles = await octokit.request(
-        "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
-        {
-            owner: "birelandef",
-            repo: "coverage-github-action",
-            pull_number: pullRequestNumber,
-        }
-    );
-    console.log(changedFiles);
+    // const changedFiles = await octokit.request(
+    //     "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
+    //     {
+    //         owner: "birelandef",
+    //         repo: "coverage-github-action",
+    //         pull_number: pullRequestNumber,
+    //     }
+    // );
+    // console.log(changedFiles);
 
     // ... and check if there is already a comment by us
     const comment = comments.find((comment) => {
