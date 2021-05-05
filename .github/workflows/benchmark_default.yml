@@ -10,7 +10,7 @@ on: push
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    name: Run the benchmarks
+    name: Run the benchmark
     # Which themselves consist of multiple steps
     steps:
       # Each step can have a name and either references another
@@ -27,11 +27,6 @@ jobs:
         # In the last task we upload the benchmark results
         # as artifacts. This will allow us to use them in a different
         # workflow later.
-      - name: Explore
-        run: |
-          pwd
-          ls -l
-        shell: bash
 
       - name: Upload the results
         uses: actions/upload-artifact@v2
@@ -43,12 +38,18 @@ jobs:
         with:
           name: benchmark_results
           path: benchmark.json
+      - name: Explore
+        run: |
+          pwd
+          ls -l
+        shell: bash
 
       - name: Compare JSONs
         uses: ./
         with:
           json_file: "benchmark.json"
           comparison_json_file: "benchmark.json"
+          token: ${{ secrets.GITHUB_TOKEN }}
 
 #      - name: Hello world action step
 #        uses: ./ # Uses an action in the root directory
