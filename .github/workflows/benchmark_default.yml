@@ -40,7 +40,7 @@ jobs:
 
       - name: Explore
         run: |
-          git diff --name-only master
+          git diff --name-only origin/master
         shell: bash
 
       - name: Compare JSONs
