@@ -2,7 +2,7 @@
 # as an artifact.
 name: Benchmark the default branch
 # run this workflow only on new commits on the default branch
-on: push
+on: [push, pull_request]
 #    branches:
 #      - "main" # replace with however your default branch is named
 
@@ -49,9 +49,3 @@ jobs:
         with:
           json_file: "benchmark.json"
           comparison_json_file: "benchmark.json"
-
-#      - name: Hello world action step
-#        uses: ./ # Uses an action in the root directory
-#        id: hello
-#        with:
-#          who-to-greet: 'Mona the Octocat'
