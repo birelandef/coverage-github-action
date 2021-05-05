@@ -1,10 +1,7 @@
 # Workflow to benchmark the default branch and store the results
 # as an artifact.
 name: Benchmark the default branch
-# run this workflow only on new commits on the default branch
 on: [pull_request]
-#    branches:
-#      - "main" # replace with however your default branch is named
 
 # A workflow consists of multiple jobs
 jobs:
@@ -21,6 +18,8 @@ jobs:
       # work area of the workflow
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
         # Normally you would produce the benchmark output here
 
