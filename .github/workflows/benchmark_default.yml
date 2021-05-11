@@ -16,7 +16,7 @@ jobs:
 
       - name: Changed files
         run: |
-          git diff --name-only origin/master --output=master.diff
+          git diff --name-only origin/master --output=master.diff  -- '*.scala'
         shell: bash
 
       - name: Upload changed files
@@ -24,6 +24,10 @@ jobs:
         with:
           name: changed_files
           path: master.diff
+      - name: Explore
+        run: |
+          ls -la
+        shell: bash
 
       - name: Report
         uses: ./
