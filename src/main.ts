@@ -68,25 +68,24 @@ async function run() {
     let head: string
 
     const context = github.context;
-    if (github.context.eventName !== "pull_request") {
-        // The core module on the other hand let's you get
-        // inputs or create outputs or control the action flow
-        // e.g. by producing a fatal error
-        core.setFailed("Can only run on pull requests!");
-        return;
-    } else {
-        base = context.payload.pull_request?.base?.sha
-        head = context.payload.pull_request?.head?.sha
-    }
+    // if (github.context.eventName !== "pull_request") {
+    //     // The core module on the other hand let's you get
+    //     // inputs or create outputs or control the action flow
+    //     // e.g. by producing a fatal error
+    //     core.setFailed("Can only run on pull requests!");
+    //     return;
+    // } else {
+    base = context.payload.pull_request?.base?.sha
+    head = context.payload.pull_request?.head?.sha
+    // }
 
     // get the inputs of the action. The "token" input
     // is not defined so far - we will come to it later.
     const githubToken = core.getInput("token");
-    console.log(githubToken);
     const benchmarkFileName = core.getInput("json_file", {required: true});
     const oldBenchmarkFileName = core.getInput("comparison_json_file", {required: true});
 
-    // Now read in the files with the function defined above
+    // Now read in the changedClasses with the function defined above
     const benchmarks = readJSON(benchmarkFileName);
     let oldBenchmarks = undefined;
     if (oldBenchmarkFileName) {
@@ -100,13 +99,11 @@ async function run() {
     const message = createMessage(benchmarks, oldBenchmarks);
     // output it to the console for logging and debugging
     console.log(message);
-
     // the context does for example also include information
     // in the pull request or repository we are issued from
 
     const repo = context.repo;
     const pullRequestNumber = context.payload.pull_request?.number as number;
-    console.log(pullRequestNumber);
     // The Octokit is a helper, to interact with
     // the github REST interface.
     // You can look up the REST interface
@@ -120,8 +117,40 @@ async function run() {
         repo: context.repo.repo
     })
     // @ts-ignore
-    const files = response.data.files.map(y => y.filename)
-    console.log(files)
+    const changedClasses = response.data.files.map(y => y.filename)
+    console.log(changedClasses)
+    const xml2js = require('xml2js');
+
+    const xmlParser = new xml2js.Parser();
+    const jp = require('jsonpath');
+
+    class ClassCoverage {
+        className: string;
+        linePercent: number;
+        branchPercent: number;
+
+        constructor(className: string, linePercent: number, branchPercent: number) {
+            this.className = className;
+            this.linePercent = linePercent;
+            this.branchPercent = branchPercent;
+        }
+    }
+
+    fs.readFile("target/scala-2.13/coverage-report/cobertura.xml", "utf8", (readError, coverageData) => {
+        xmlParser.parseStringPromise(coverageData)
+            .then(function (result) {
+                return jp
+                    .nodes(result, '$.coverage..class', 7)
+                    .flatMap(p => p.value)
+                    .map(n => new ClassCoverage(n.$.name, Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100)));
+            })
+            // .then(function (coverage) {
+            //     console.dir(coverage)
+            // })
+            .catch(function (err) {
+                // Failed
+            });
+    });
 
     // Get all comments we currently have...
     // (this is an asynchronous function)
