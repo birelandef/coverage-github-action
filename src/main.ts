@@ -7,6 +7,8 @@ const fs = require("fs");
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 
+import simpleGit, {SimpleGit} from 'simple-git';
+
 // Function to read and parse a JSON
 function readJSON(filename: string) {
     // read in the file
@@ -101,6 +103,15 @@ async function run() {
     console.log(message);
     // the context does for example also include information
     // in the pull request or repository we are issued from
+    //
+    // const {exec} = require('child_process');
+    // const t = await exec(" git diff --name-only origin/master", (err, stdout, stderr) => {
+    //     if (err) {
+    //         console.error(`exec error: ${err}`);
+    //         return;
+    //     }
+    //     console.log(`Number of files ${stdout}`);
+    // });
 
     const repo = context.repo;
     const pullRequestNumber = context.payload.pull_request?.number as number;
@@ -110,15 +121,32 @@ async function run() {
     // here: https://octokit.github.io/rest.js/v18
     const octokit = github.getOctokit(githubToken);
 
-    const response = await octokit.repos.compareCommits({
-        base,
-        head,
-        owner: context.repo.owner,
-        repo: context.repo.repo
-    })
-    // @ts-ignore
-    const changedClasses = response.data.files.map(y => y.filename)
-    console.log(changedClasses)
+
+    // const changedFiles = await octokit.request(
+    //     "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
+    //     {
+    //         owner: "YandexClassifieds",
+    //         repo: "vs",
+    //         pull_number: 518,
+    //     }
+    // );
+
+    const changedFiles = await octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
+        owner: "birelandef",
+        repo: "coverage-github-action",
+        pull_number: 7
+    });
+    console.log(changedFiles);
+
+    // const response = await octokit.repos.compareCommits({
+    //     base,
+    //     head,
+    //     owner: context.repo.owner,
+    //     repo: context.repo.repo
+    // })
+    // // @ts-ignore
+    // const changedClasses = response.data.files.map(y => y.filename)
+    // console.log(changedClasses)
     const xml2js = require('xml2js');
 
     const xmlParser = new xml2js.Parser();

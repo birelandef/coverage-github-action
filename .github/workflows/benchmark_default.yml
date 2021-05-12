@@ -19,11 +19,12 @@ jobs:
           git diff --name-only origin/master --output=master.diff  -- '*.scala'
         shell: bash
 
-      - name: Upload changed files
-        uses: actions/upload-artifact@v2
-        with:
-          name: changed_files
-          path: master.diff
+#      - name: Upload changed files
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: changed_files
+#          path: master.diff
+
       - name: Explore
         run: |
           ls -la
