@@ -16,19 +16,25 @@ function readJSON(filename: string) {
     return benchmarkJSON;
 }
 
-function createMessage(classList, comparisonBenchmark): string {
+function createMessage(classList, covReport): string {
+    const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
 
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
 
     classList.forEach(clazz => {
-        message += `| ${clazz}`;
-        const current = 0.9;//todo real value
-        message += `| ${current.toFixed(2)}`;
-        const master = 0.8;//todo real value
-        message += `| ${master.toFixed(2)}`;
-        message += "| \n";
+
+        const cutPath = clazz.replace(regex, ``);
+        const found = covReport.get(cutPath)
+        if (found) {
+            message += `| ${found.className}`;
+            const current = found.currentPR.linePercent;//todo real value
+            message += `| ${current.toFixed(2)}`;
+            const master = 0.8;//todo real value
+            message += `| ${master.toFixed(2)}`;
+            message += "| \n";
+        }
     });
     return message;
 }
@@ -84,12 +90,6 @@ async function run() {
             console.log("Can not read comparison file. Continue without it.");
         }
     }
-    // and create the message
-    const message = createMessage(await changedInPRFiles(langs), oldBenchmarks);
-    // output it to the console for logging and debugging
-    console.log(message);
-    // the context does for example also include information
-    // in the pull request or repository we are issued from
 
     const repo = context.repo;
     const pullRequestNumber = context.payload.pull_request?.number as number;
@@ -103,31 +103,53 @@ async function run() {
 
     class ClassCoverage {
         className: string;
+        currentPR: Coverage;
+        master: Coverage;
+
+        constructor(className: string, currentPR: Coverage, master: Coverage) {
+            this.className = className;
+            this.currentPR = currentPR;
+            this.master = master;
+        }
+    }
+
+    class Coverage {
         linePercent: number;
         branchPercent: number;
 
-        constructor(className: string, linePercent: number, branchPercent: number) {
-            this.className = className;
+        constructor(linePercent: number, branchPercent: number) {
             this.linePercent = linePercent;
             this.branchPercent = branchPercent;
         }
     }
 
-    fs.readFile("target/scala-2.13/coverage-report/cobertura.xml", "utf8", (readError, coverageData) => {
-        xmlParser.parseStringPromise(coverageData)
-            .then(function (result) {
-                return jp
-                    .nodes(result, '$.coverage..class', 7)
-                    .flatMap(p => p.value)
-                    .map(n => new ClassCoverage(n.$.name, Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100)));
-            })
-            // .then(function (coverage) {
-            //     console.dir(coverage)
-            // })
-            .catch(function (err) {
-                // Failed
-            });
-    });
+    const currentCov = new Map();
+    const coverageData = fs.readFileSync("target/scala-2.13/coverage-report/cobertura.xml", "utf8")
+
+    await xmlParser.parseStringPromise(coverageData)
+        .then(function (result) {
+            return jp
+                .nodes(result, '$.coverage..class')
+                .flatMap(p => p.value)
+                .map(n => {
+                    currentCov.set(n.$.filename,
+                        new ClassCoverage(
+                            n.$.name,
+                            new Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100)),
+                            new Coverage(100, 100)),
+                    )
+                });
+        }).catch(function (err) {
+            console.error(err)
+        });
+
+    console.log(currentCov)
+
+    const message = createMessage(
+        await changedInPRFiles(langs),
+        // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
+        currentCov);
+    console.log(message);
 
     // Get all comments we currently have...
     // (this is an asynchronous function)
@@ -163,5 +185,4 @@ async function run() {
     }
 }
 
-// Our main method: call the run() function and report any errors
 run().catch((error) => core.setFailed("Workflow failed! " + error.message));
