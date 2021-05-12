@@ -132,9 +132,9 @@ async function run() {
     // );
 
     const changedFiles = await octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
-        owner: "birelandef",
-        repo: "coverage-github-action",
-        pull_number: 7
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        pull_number: pullRequestNumber
     });
     console.log(changedFiles);
 
