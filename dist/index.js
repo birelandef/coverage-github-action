@@ -53,28 +53,28 @@ function readJSON(filename) {
     const benchmarkJSON = JSON.parse(rawdata);
     return benchmarkJSON;
 }
-// Create a markdown message from the two JSON.
 function createMessage(classList, comparisonBenchmark) {
     let message = "## Coverage report\n";
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
     classList.forEach(clazz => {
         message += `| ${clazz}`;
-        const value = 8; //classList[key];
-        message += `| ${value.toFixed(2)}`;
-        message += "| ";
+        const current = 0.9; //todo real value
+        message += `| ${current.toFixed(2)}`;
+        const master = 0.8; //todo real value
+        message += `| ${master.toFixed(2)}`;
         message += "| \n";
     });
     return message;
 }
-function changedInPRFiles() {
+function changedInPRFiles(extensions) {
     return __awaiter(this, void 0, void 0, function* () {
         const git = simple_git_1.default();
         const args = [
             "origin/master",
-            "--name-only",
+            "--name-only", //todo протащить расширение в нативную команду git
         ];
-        return (yield git.diff(args)).trim().split('\n');
+        return (yield git.diff(args)).trim().split('\n').filter(file => extensions.find(ext => file.endsWith(ext)));
     });
 }
 // Main function of this action: read in the files and produce the comment.
@@ -114,7 +114,7 @@ function run() {
             }
         }
         // and create the message
-        const message = createMessage(yield changedInPRFiles(), oldBenchmarks);
+        const message = createMessage(yield changedInPRFiles([".ts", ".js"]), oldBenchmarks);
         // output it to the console for logging and debugging
         console.log(message);
         // the context does for example also include information
