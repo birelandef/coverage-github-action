@@ -7,50 +7,43 @@ const fs = require("fs");
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 
+import simpleGit from 'simple-git';
+
 // Function to read and parse a JSON
 function readJSON(filename: string) {
-    // read in the file
     const rawdata = fs.readFileSync(filename);
-    // parse the JSON into a mapping
     const benchmarkJSON = JSON.parse(rawdata);
-    // return it
     return benchmarkJSON;
 }
 
-// Create a markdown message from the two JSON.
-function createMessage(benchmark, comparisonBenchmark): string {
+function createMessage(classList, comparisonBenchmark): string {
     let message = "## Coverage report\n";
 
-    // Table Title
     message += "| Key | Current PR | Default Branch |\n";
-
-    // Table Column Definitions
     message += "| :--- | :---: | :---: |\n";
 
-    for (const key in benchmark) {
-        // First Column: The key
-        // Please note the ` instead of ". This is TypeScripts
-        // format string. Everything in ${ } will be replaced.
-        message += `| ${key}`;
-
-        // Second column: the value with 2 digits
-        const value = benchmark[key];
-        message += `| ${value.toFixed(2)}`;
-
-        // Third column: the comparison value.
-        // If this does not work out (e.g. because the key is not defined),
-        // just output nothing
-        try {
-            const oldValue = comparisonBenchmark[key];
-            message += `| ${oldValue.toFixed(2)}`;
-        } catch (error) {
-            console.log("Can not read key", key, "from the comparison file.");
-            message += "| ";
-        }
+    classList.forEach(clazz => {
+        message += `| ${clazz}`;
+        const current = 0.9;//todo real value
+        message += `| ${current.toFixed(2)}`;
+        const master = 0.8;//todo real value
+        message += `| ${master.toFixed(2)}`;
         message += "| \n";
-    }
-
+    });
     return message;
+}
+
+async function changedInPRFiles(extensions: Array<string>) {
+    const git = simpleGit();
+    const args = [
+        "origin/master",
+        "--name-only", //todo протащить фильтр по расширению в нативную команду git
+    ]
+    const allFiles = (await git.diff(args)).trim().split('\n');
+    if (extensions.length == 0)
+        return allFiles;
+    else
+        return allFiles.filter(file => extensions.find(ext => file.endsWith(ext)))
 }
 
 // Main function of this action: read in the files and produce the comment.
@@ -58,14 +51,12 @@ function createMessage(benchmark, comparisonBenchmark): string {
 // an event loop - which is beyond the scope of the blog.
 // Just remember: we will use a library which has asynchronous
 // functions, so we also need to call them asynchronously.
+
 async function run() {
     // The github module has a member called "context",
     // which always includes information on the action workflow
     // we are currently running in.
     // For example, it let's us check the event that triggered the workflow.
-
-    let base: string
-    let head: string
 
     const context = github.context;
     // if (github.context.eventName !== "pull_request") {
@@ -75,18 +66,16 @@ async function run() {
     //     core.setFailed("Can only run on pull requests!");
     //     return;
     // } else {
-    base = context.payload.pull_request?.base?.sha
-    head = context.payload.pull_request?.head?.sha
+    //  console.error(`Can't apply action to ${github.context.eventName}: only for PR`)
     // }
 
-    // get the inputs of the action. The "token" input
-    // is not defined so far - we will come to it later.
     const githubToken = core.getInput("token");
     const benchmarkFileName = core.getInput("json_file", {required: true});
     const oldBenchmarkFileName = core.getInput("comparison_json_file", {required: true});
+    const langs = core.getInput("langs").split(",").map(ext => ext.trim()).filter(y => y.length != 0)
 
-    // Now read in the changedClasses with the function defined above
     const benchmarks = readJSON(benchmarkFileName);
+
     let oldBenchmarks = undefined;
     if (oldBenchmarkFileName) {
         try {
@@ -96,7 +85,7 @@ async function run() {
         }
     }
     // and create the message
-    const message = createMessage(benchmarks, oldBenchmarks);
+    const message = createMessage(await changedInPRFiles(langs), oldBenchmarks);
     // output it to the console for logging and debugging
     console.log(message);
     // the context does for example also include information
@@ -104,21 +93,9 @@ async function run() {
 
     const repo = context.repo;
     const pullRequestNumber = context.payload.pull_request?.number as number;
-    // The Octokit is a helper, to interact with
-    // the github REST interface.
-    // You can look up the REST interface
-    // here: https://octokit.github.io/rest.js/v18
+
     const octokit = github.getOctokit(githubToken);
 
-    const response = await octokit.repos.compareCommits({
-        base,
-        head,
-        owner: context.repo.owner,
-        repo: context.repo.repo
-    })
-    // @ts-ignore
-    const changedClasses = response.data.files.map(y => y.filename)
-    console.log(changedClasses)
     const xml2js = require('xml2js');
 
     const xmlParser = new xml2js.Parser();
