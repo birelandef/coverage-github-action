@@ -72,9 +72,13 @@ function changedInPRFiles(extensions) {
         const git = simple_git_1.default();
         const args = [
             "origin/master",
-            "--name-only", //todo протащить расширение в нативную команду git
+            "--name-only", //todo протащить фильтр по расширению в нативную команду git
         ];
-        return (yield git.diff(args)).trim().split('\n').filter(file => extensions.find(ext => file.endsWith(ext)));
+        const allFiles = (yield git.diff(args)).trim().split('\n');
+        if (extensions.length == 0)
+            return allFiles;
+        else
+            return allFiles.filter(file => extensions.find(ext => file.endsWith(ext)));
     });
 }
 // Main function of this action: read in the files and produce the comment.
@@ -102,7 +106,7 @@ function run() {
         const githubToken = core.getInput("token");
         const benchmarkFileName = core.getInput("json_file", { required: true });
         const oldBenchmarkFileName = core.getInput("comparison_json_file", { required: true });
-        // Now read in the changedClasses with the function defined above
+        const langs = core.getInput("langs").split(",").map(ext => ext.trim()).filter(y => y.length != 0);
         const benchmarks = readJSON(benchmarkFileName);
         let oldBenchmarks = undefined;
         if (oldBenchmarkFileName) {
@@ -114,7 +118,7 @@ function run() {
             }
         }
         // and create the message
-        const message = createMessage(yield changedInPRFiles([".ts", ".js"]), oldBenchmarks);
+        const message = createMessage(yield changedInPRFiles(langs), oldBenchmarks);
         // output it to the console for logging and debugging
         console.log(message);
         // the context does for example also include information

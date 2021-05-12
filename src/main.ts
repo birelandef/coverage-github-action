@@ -33,13 +33,17 @@ function createMessage(classList, comparisonBenchmark): string {
     return message;
 }
 
-async function changedInPRFiles(extensions: Array<string> ) {
+async function changedInPRFiles(extensions: Array<string>) {
     const git = simpleGit();
     const args = [
         "origin/master",
-        "--name-only", //todo протащить расширение в нативную команду git
+        "--name-only", //todo протащить фильтр по расширению в нативную команду git
     ]
-    return (await git.diff(args)).trim().split('\n').filter(file => extensions.find(ext => file.endsWith(ext)))
+    const allFiles = (await git.diff(args)).trim().split('\n');
+    if (extensions.length == 0)
+        return allFiles;
+    else
+        return allFiles.filter(file => extensions.find(ext => file.endsWith(ext)))
 }
 
 // Main function of this action: read in the files and produce the comment.
@@ -68,8 +72,8 @@ async function run() {
     const githubToken = core.getInput("token");
     const benchmarkFileName = core.getInput("json_file", {required: true});
     const oldBenchmarkFileName = core.getInput("comparison_json_file", {required: true});
+    const langs = core.getInput("langs").split(",").map(ext => ext.trim()).filter(y => y.length != 0)
 
-    // Now read in the changedClasses with the function defined above
     const benchmarks = readJSON(benchmarkFileName);
 
     let oldBenchmarks = undefined;
@@ -81,7 +85,7 @@ async function run() {
         }
     }
     // and create the message
-    const message = createMessage(await changedInPRFiles([".ts", ".js"]), oldBenchmarks);
+    const message = createMessage(await changedInPRFiles(langs), oldBenchmarks);
     // output it to the console for logging and debugging
     console.log(message);
     // the context does for example also include information
