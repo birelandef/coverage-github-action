@@ -47,6 +47,7 @@ const fs = __nccwpck_require__(5747);
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const simple_git_1 = __importDefault(__nccwpck_require__(6694));
+const model_1 = __nccwpck_require__(9599);
 // Function to read and parse a JSON
 function readJSON(filename) {
     const rawdata = fs.readFileSync(filename);
@@ -130,19 +131,6 @@ function run() {
         const xml2js = __nccwpck_require__(6189);
         const xmlParser = new xml2js.Parser();
         const jp = __nccwpck_require__(4378);
-        class ClassCoverage {
-            constructor(className, currentPR, master) {
-                this.className = className;
-                this.currentPR = currentPR;
-                this.master = master;
-            }
-        }
-        class Coverage {
-            constructor(linePercent, branchPercent) {
-                this.linePercent = linePercent;
-                this.branchPercent = branchPercent;
-            }
-        }
         const currentCov = new Map();
         const coverageData = fs.readFileSync("target/scala-2.13/coverage-report/cobertura.xml", "utf8");
         yield xmlParser.parseStringPromise(coverageData)
@@ -151,7 +139,7 @@ function run() {
                 .nodes(result, '$.coverage..class')
                 .flatMap(p => p.value)
                 .map(n => {
-                currentCov.set(n.$.filename, new ClassCoverage(n.$.name, new Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100)), new Coverage(100, 100)));
+                currentCov.set(n.$.filename, new model_1.ClassCoverage(n.$.name, new model_1.Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100)), new model_1.Coverage(100, 100)));
             });
         }).catch(function (err) {
             console.error(err);
@@ -182,6 +170,32 @@ function run() {
     });
 }
 run().catch((error) => core.setFailed("Workflow failed! " + error.message));
+
+
+/***/ }),
+
+/***/ 9599:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Coverage = exports.ClassCoverage = void 0;
+class ClassCoverage {
+    constructor(className, currentPR, master) {
+        this.className = className;
+        this.currentPR = currentPR;
+        this.master = master;
+    }
+}
+exports.ClassCoverage = ClassCoverage;
+class Coverage {
+    constructor(linePercent, branchPercent) {
+        this.linePercent = linePercent;
+        this.branchPercent = branchPercent;
+    }
+}
+exports.Coverage = Coverage;
 
 
 /***/ }),
