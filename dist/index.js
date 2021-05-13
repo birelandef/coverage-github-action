@@ -66,7 +66,7 @@ function createMessage(changedClass, covReport) {
             const current = found.currentPR.linePercent; //todo real value
             message += `| ${current.toFixed(2)} :small_red_triangle_down:`;
             const master = 0.8; //todo real value
-            message += `| ${master.toFixed(2)}`;
+            message += `| ${master.toFixed(2)} :arrow_up:  <span style="color:orange;">Word up</span>`;
             message += "| \n";
         }
     });
