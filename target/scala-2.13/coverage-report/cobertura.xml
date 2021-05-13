@@ -3505,7 +3505,7 @@ line-rate="0.45" lines-valid="5177" lines-covered="2345" branches-valid="224" br
                     </lines>
 </class>
                 <class 
-                name="vasgen.core.saas.FieldMappingReader" filename="vasgen/core/saas/FieldMappingReader.scala" line-rate="0.97" branch-rate="1.00" complexity="0">
+                name="vasgen.core.saas.FieldMappingReader" filename="vasgen/core/saas/FieldMappingReader.scala" line-rate="0.65" branch-rate="1.00" complexity="0">
                     <methods>
                         <method 
                         name="vasgen.core.saas/FieldMappingReader/defineSaasMeta" signature="()V" line-rate="1.00" branch-rate="1.00" complexity="0">

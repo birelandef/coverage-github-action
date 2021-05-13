@@ -64,8 +64,10 @@ function createMessage(changedClass, covReport) {
         if (found) {
             message += `| ${found.className}`;
             const current = found.currentPR.linePercent; //todo real value
-            message += `| ${current.toFixed(2)}`;
-            const master = 0.8; //todo real value
+            const master = 80; //todo real value
+            message += `| ${current.toFixed(2)} `;
+            if (current < master)
+                message += `:small_red_triangle_down:`;
             message += `| ${master.toFixed(2)}`;
             message += "| \n";
         }
@@ -155,9 +157,9 @@ function run() {
             console.error(err);
         });
         console.log(currentCov);
-        const message = createMessage(yield changedInPRFiles(langs), 
-        // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
-        currentCov);
+        const message = createMessage(
+        // await changedInPRFiles(langs),
+        ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"], currentCov);
         console.log(message);
         // Get all comments we currently have...
         // (this is an asynchronous function)
