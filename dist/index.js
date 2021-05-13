@@ -53,12 +53,12 @@ function readJSON(filename) {
     const benchmarkJSON = JSON.parse(rawdata);
     return benchmarkJSON;
 }
-function createMessage(classList, covReport) {
+function createMessage(changedClass, covReport) {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
-    classList.forEach(clazz => {
+    changedClass.forEach(clazz => {
         const cutPath = clazz.replace(regex, ``);
         const found = covReport.get(cutPath);
         if (found) {

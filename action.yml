@@ -11,19 +11,14 @@ inputs:
     description: 'Where to find the json output of an old benchmark for comparison. Empty for no comparison.'
     required: false
     default: ''
-  # Remember we used ain input which was not defined in the
-  # workflow file? It's because the default is already
-  # fine for us, so no need to change it.
-  # As described above, the github token is a token to
-  # interact with the GitHub REST API and is created for
-  # you from GitHub automatically.
   token:
     description: 'GitHub token'
     default: $
     required: true
-# We specify the created dist/index.js file
-# as the entrypoint of our action
-
+  langs:
+    description: 'Project source file type'
+    default: ''
+    required: false
 
 runs:
   using: 'node12'
