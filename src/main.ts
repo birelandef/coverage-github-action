@@ -30,9 +30,12 @@ function createMessage(changedClass, covReport): string {
         if (found) {
             message += `| ${found.className}`;
             const current = found.currentPR.linePercent;//todo real value
-            message += `| ${current.toFixed(2)} :small_red_triangle_down:`;
             const master = 0.8;//todo real value
-            message += `| ${master.toFixed(2)} :arrow_up:  <span style="color:orange;">Word up</span>`;
+
+            message += `| ${current.toFixed(2)} `;
+            if (current < master )
+                message += `:small_red_triangle_down:`
+            message += `| ${master.toFixed(2)} :arrow_up:`;
             message += "| \n";
         }
     });
