@@ -27,13 +27,8 @@ jobs:
 
       - name: Explore
         run: |
-          ls -la
+          aws help
         shell: bash
-
-      - name: Create tag
-        uses: actions/labeler@main
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Report
         uses: ./
