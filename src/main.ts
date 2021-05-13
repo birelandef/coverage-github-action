@@ -96,7 +96,6 @@ async function run() {
     const pullRequestNumber = context.payload.pull_request?.number as number;
 
     const octokit = github.getOctokit(githubToken);
-
     const xml2js = require('xml2js');
 
     const xmlParser = new xml2js.Parser();

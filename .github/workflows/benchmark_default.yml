@@ -31,16 +31,9 @@ jobs:
         shell: bash
 
       - name: Create tag
-        uses: actions/github-script@v3
+        uses: actions/labeler@main
         with:
-          github-token: ${{ github.token }}
-          script: |
-            github.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: "refs/tags/tagname",
-              sha: context.sha
-            })
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Report
         uses: ./
