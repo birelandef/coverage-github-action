@@ -8,6 +8,7 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 
 import simpleGit from 'simple-git';
+import {ClassCoverage, Coverage} from './model';
 
 // Function to read and parse a JSON
 function readJSON(filename: string) {
@@ -100,28 +101,6 @@ async function run() {
 
     const xmlParser = new xml2js.Parser();
     const jp = require('jsonpath');
-
-    class ClassCoverage {
-        className: string;
-        currentPR: Coverage;
-        master: Coverage;
-
-        constructor(className: string, currentPR: Coverage, master: Coverage) {
-            this.className = className;
-            this.currentPR = currentPR;
-            this.master = master;
-        }
-    }
-
-    class Coverage {
-        linePercent: number;
-        branchPercent: number;
-
-        constructor(linePercent: number, branchPercent: number) {
-            this.linePercent = linePercent;
-            this.branchPercent = branchPercent;
-        }
-    }
 
     const currentCov = new Map();
     const coverageData = fs.readFileSync("target/scala-2.13/coverage-report/cobertura.xml", "utf8")
