@@ -16,14 +16,14 @@ function readJSON(filename: string) {
     return benchmarkJSON;
 }
 
-function createMessage(classList, covReport): string {
+function createMessage(changedClass, covReport): string {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
 
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
 
-    classList.forEach(clazz => {
+    changedClass.forEach(clazz => {
 
         const cutPath = clazz.replace(regex, ``);
         const found = covReport.get(cutPath)

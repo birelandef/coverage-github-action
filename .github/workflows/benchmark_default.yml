@@ -36,3 +36,4 @@ jobs:
           json_file: "benchmark.json"
           comparison_json_file: "benchmark.json"
           token: ${{ secrets.GITHUB_TOKEN }}
+          langs: "js,ts"
