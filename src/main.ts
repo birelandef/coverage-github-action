@@ -149,8 +149,8 @@ async function run() {
     console.log(currentCov)
 
     const message = createMessage(
-        // await changedInPRFiles(langs),
-        ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
+        await changedInPRFiles(langs),
+        // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
         currentCov);
     console.log(message);
 
