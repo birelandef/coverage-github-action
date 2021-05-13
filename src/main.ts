@@ -30,7 +30,7 @@ function createMessage(changedClass, covReport): string {
         if (found) {
             message += `| ${found.className}`;
             const current = found.currentPR.linePercent;//todo real value
-            message += `| ${current.toFixed(2)}`;
+            message += `| ${current.toFixed(2)} :small_red_triangle_down:`;
             const master = 0.8;//todo real value
             message += `| ${master.toFixed(2)}`;
             message += "| \n";
@@ -146,8 +146,8 @@ async function run() {
     console.log(currentCov)
 
     const message = createMessage(
-        await changedInPRFiles(langs),
-        // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
+        // await changedInPRFiles(langs),
+        ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
         currentCov);
     console.log(message);
 
