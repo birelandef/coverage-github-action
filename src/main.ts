@@ -30,7 +30,7 @@ function createMessage(changedClass, covReport): string {
         if (found) {
             message += `| ${found.className}`;
             const current = found.currentPR.linePercent;//todo real value
-            const master = 80;//todo real value
+            const master = 80 ;//todo real value
 
             message += `| ${current.toFixed(2)} `;
             if (current < master )
