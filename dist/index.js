@@ -61,7 +61,7 @@ function createCoverageComment(changedClass, currentCov, masterCov) {
             message += `| ${inCurrent.coverage.linePercent.toFixed(2)}`;
             const inMaster = masterCov.get(cutPath);
             if (inMaster) {
-                if (inCurrent < inMaster)
+                if (inCurrent.coverage.linePercent < inMaster.coverage.linePercent)
                     message += `:small_red_triangle_down:`;
                 message += `| ${inMaster.coverage.linePercent.toFixed(2)}`;
             }
