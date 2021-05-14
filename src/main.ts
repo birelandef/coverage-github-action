@@ -26,6 +26,8 @@ function createCoverageComment(changedClass, currentCov: Map<string, ClassCovera
             message += `| ${inCurrent.coverage.linePercent.toFixed(2)}`;
             const inMaster = masterCov.get(cutPath)
             if (inMaster) {
+                if (inCurrent < inMaster )
+                    message += `:small_red_triangle_down:`
                 message += `| ${inMaster.coverage.linePercent.toFixed(2)}`;
             } else {
                 message += "| ";
