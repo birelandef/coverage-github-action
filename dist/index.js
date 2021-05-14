@@ -47,28 +47,27 @@ const fs = __nccwpck_require__(5747);
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const simple_git_1 = __importDefault(__nccwpck_require__(6694));
-// Function to read and parse a JSON
-function readJSON(filename) {
-    const rawdata = fs.readFileSync(filename);
-    const benchmarkJSON = JSON.parse(rawdata);
-    return benchmarkJSON;
-}
-function createMessage(changedClass, covReport) {
+const model_1 = __nccwpck_require__(9599);
+function createCoverageComment(changedClass, currentCov, masterCov) {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
     changedClass.forEach(clazz => {
         const cutPath = clazz.replace(regex, ``);
-        const found = covReport.get(cutPath);
-        if (found) {
-            message += `| ${found.className}`;
-            const current = found.currentPR.linePercent; //todo real value
-            const master = 80; //todo real value
-            message += `| ${current.toFixed(2)} `;
-            if (current < master)
-                message += `:small_red_triangle_down:`;
-            message += `| ${master.toFixed(2)}`;
+        const inCurrent = currentCov.get(cutPath);
+        if (inCurrent) {
+            message += `| ${inCurrent.className}`;
+            message += `| ${inCurrent.coverage.linePercent.toFixed(2)}`;
+            const inMaster = masterCov.get(cutPath);
+            if (inMaster) {
+                if (inCurrent < inMaster)
+                    message += `:small_red_triangle_down:`;
+                message += `| ${inMaster.coverage.linePercent.toFixed(2)}`;
+            }
+            else {
+                message += "| ";
+            }
             message += "| \n";
         }
     });
@@ -88,18 +87,30 @@ function changedInPRFiles(extensions) {
             return allFiles.filter(file => extensions.find(ext => file.endsWith(ext)));
     });
 }
-// Main function of this action: read in the files and produce the comment.
-// The async keyword makes the run function controlled via
-// an event loop - which is beyond the scope of the blog.
-// Just remember: we will use a library which has asynchronous
-// functions, so we also need to call them asynchronously.
+function parseReport(reportPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const coverageMap = new Map();
+        const coverageData = fs.readFileSync(reportPath, "utf8");
+        const xml2js = __nccwpck_require__(6189);
+        const xmlParser = new xml2js.Parser();
+        const jp = __nccwpck_require__(4378);
+        yield xmlParser.parseStringPromise(coverageData)
+            .then(function (result) {
+            return jp
+                .nodes(result, '$.coverage..class')
+                .flatMap(p => p.value)
+                .map(n => {
+                coverageMap.set(n.$.filename, new model_1.ClassCoverage(n.$.name, new model_1.Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100))));
+            });
+        }).catch(function (err) {
+            console.error(err);
+        });
+        return coverageMap;
+    });
+}
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        // The github module has a member called "context",
-        // which always includes information on the action workflow
-        // we are currently running in.
-        // For example, it let's us check the event that triggered the workflow.
         const context = github.context;
         // if (github.context.eventName !== "pull_request") {
         //     // The core module on the other hand let's you get
@@ -111,55 +122,19 @@ function run() {
         //  console.error(`Can't apply action to ${github.context.eventName}: only for PR`)
         // }
         const githubToken = core.getInput("token");
-        const benchmarkFileName = core.getInput("json_file", { required: true });
-        const oldBenchmarkFileName = core.getInput("comparison_json_file", { required: true });
+        const currentReportPath = core.getInput("current_coverage", { required: true });
+        const masterReportPath = core.getInput("master_coverage", { required: true });
         const langs = core.getInput("langs").split(",").map(ext => ext.trim()).filter(y => y.length != 0);
-        const benchmarks = readJSON(benchmarkFileName);
-        let oldBenchmarks = undefined;
-        if (oldBenchmarkFileName) {
-            try {
-                oldBenchmarks = readJSON(oldBenchmarkFileName);
-            }
-            catch (error) {
-                console.log("Can not read comparison file. Continue without it.");
-            }
-        }
         const repo = context.repo;
         const pullRequestNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
         const octokit = github.getOctokit(githubToken);
-        const xml2js = __nccwpck_require__(6189);
-        const xmlParser = new xml2js.Parser();
-        const jp = __nccwpck_require__(4378);
-        class ClassCoverage {
-            constructor(className, currentPR, master) {
-                this.className = className;
-                this.currentPR = currentPR;
-                this.master = master;
-            }
-        }
-        class Coverage {
-            constructor(linePercent, branchPercent) {
-                this.linePercent = linePercent;
-                this.branchPercent = branchPercent;
-            }
-        }
-        const currentCov = new Map();
-        const coverageData = fs.readFileSync("target/scala-2.13/coverage-report/cobertura.xml", "utf8");
-        yield xmlParser.parseStringPromise(coverageData)
-            .then(function (result) {
-            return jp
-                .nodes(result, '$.coverage..class')
-                .flatMap(p => p.value)
-                .map(n => {
-                currentCov.set(n.$.filename, new ClassCoverage(n.$.name, new Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100)), new Coverage(100, 100)));
-            });
-        }).catch(function (err) {
-            console.error(err);
-        });
-        console.log(currentCov);
-        const message = createMessage(
-        // await changedInPRFiles(langs),
-        ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"], currentCov);
+        const current = yield parseReport(currentReportPath);
+        console.log(current);
+        const master = yield parseReport(masterReportPath);
+        console.log(master);
+        const message = yield createCoverageComment(yield changedInPRFiles(langs), 
+        // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
+        current, master);
         console.log(message);
         // Get all comments we currently have...
         // (this is an asynchronous function)
@@ -182,6 +157,31 @@ function run() {
     });
 }
 run().catch((error) => core.setFailed("Workflow failed! " + error.message));
+
+
+/***/ }),
+
+/***/ 9599:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Coverage = exports.ClassCoverage = void 0;
+class ClassCoverage {
+    constructor(className, currentPR) {
+        this.className = className;
+        this.coverage = currentPR;
+    }
+}
+exports.ClassCoverage = ClassCoverage;
+class Coverage {
+    constructor(linePercent, branchPercent) {
+        this.linePercent = linePercent;
+        this.branchPercent = branchPercent;
+    }
+}
+exports.Coverage = Coverage;
 
 
 /***/ }),

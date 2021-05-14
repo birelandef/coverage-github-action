@@ -3,11 +3,11 @@ name: 'Comment with Benchmark Result'
 # from the workflow file and are consumed in our code
 on: [push]
 inputs:
-  json_file:
+  current_coverage:
     description: 'Where to find the json output of the benchmark'
     required: true
     default: 'output.json'
-  comparison_json_file:
+  master_coverage:
     description: 'Where to find the json output of an old benchmark for comparison. Empty for no comparison.'
     required: false
     default: ''
