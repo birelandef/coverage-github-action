@@ -10,14 +10,7 @@ import * as github from "@actions/github";
 import simpleGit from 'simple-git';
 import {ClassCoverage, Coverage} from './model';
 
-// Function to read and parse a JSON
-function readJSON(filename: string) {
-    const rawdata = fs.readFileSync(filename);
-    const benchmarkJSON = JSON.parse(rawdata);
-    return benchmarkJSON;
-}
-
-function createMessage(changedClass, covReport): string {
+function createCoverageComment(changedClass, currentCov: Map<string, ClassCoverage>, masterCov: Map<string, ClassCoverage>): string {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
 
@@ -27,13 +20,16 @@ function createMessage(changedClass, covReport): string {
     changedClass.forEach(clazz => {
 
         const cutPath = clazz.replace(regex, ``);
-        const found = covReport.get(cutPath)
-        if (found) {
-            message += `| ${found.className}`;
-            const current = found.currentPR.linePercent;//todo real value
-            message += `| ${current.toFixed(2)}`;
-            const master = 0.8;//todo real value
-            message += `| ${master.toFixed(2)}`;
+        const inCurrent = currentCov.get(cutPath)
+        if (inCurrent) {
+            message += `| ${inCurrent.className}`;
+            message += `| ${inCurrent.coverage.linePercent.toFixed(2)}`;
+            const inMaster = masterCov.get(cutPath)
+            if (inMaster) {
+                message += `| ${inMaster.coverage.linePercent.toFixed(2)}`;
+            } else {
+                message += "| ";
+            }
             message += "| \n";
         }
     });
@@ -53,18 +49,33 @@ async function changedInPRFiles(extensions: Array<string>) {
         return allFiles.filter(file => extensions.find(ext => file.endsWith(ext)))
 }
 
-// Main function of this action: read in the files and produce the comment.
-// The async keyword makes the run function controlled via
-// an event loop - which is beyond the scope of the blog.
-// Just remember: we will use a library which has asynchronous
-// functions, so we also need to call them asynchronously.
+async function parseReport(reportPath: string): Promise<Map<string, ClassCoverage>> {
+    const coverageMap = new Map();
+    const coverageData = fs.readFileSync(reportPath, "utf8")
+
+    const xml2js = require('xml2js');
+    const xmlParser = new xml2js.Parser();
+    const jp = require('jsonpath');
+
+    await xmlParser.parseStringPromise(coverageData)
+        .then(function (result) {
+            return jp
+                .nodes(result, '$.coverage..class')
+                .flatMap(p => p.value)
+                .map(n => {
+                    coverageMap.set(n.$.filename,
+                        new ClassCoverage(
+                            n.$.name,
+                            new Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100))
+                        ))
+                });
+        }).catch(function (err) {
+            console.error(err)
+        });
+    return coverageMap;
+}
 
 async function run() {
-    // The github module has a member called "context",
-    // which always includes information on the action workflow
-    // we are currently running in.
-    // For example, it let's us check the event that triggered the workflow.
-
     const context = github.context;
     // if (github.context.eventName !== "pull_request") {
     //     // The core module on the other hand let's you get
@@ -77,56 +88,25 @@ async function run() {
     // }
 
     const githubToken = core.getInput("token");
-    const benchmarkFileName = core.getInput("json_file", {required: true});
-    const oldBenchmarkFileName = core.getInput("comparison_json_file", {required: true});
+    const currentReportPath = core.getInput("current_coverage", {required: true});
+    const masterReportPath = core.getInput("master_coverage", {required: true});
     const langs = core.getInput("langs").split(",").map(ext => ext.trim()).filter(y => y.length != 0)
-
-    const benchmarks = readJSON(benchmarkFileName);
-
-    let oldBenchmarks = undefined;
-    if (oldBenchmarkFileName) {
-        try {
-            oldBenchmarks = readJSON(oldBenchmarkFileName);
-        } catch (error) {
-            console.log("Can not read comparison file. Continue without it.");
-        }
-    }
 
     const repo = context.repo;
     const pullRequestNumber = context.payload.pull_request?.number as number;
 
     const octokit = github.getOctokit(githubToken);
-    const xml2js = require('xml2js');
 
-    const xmlParser = new xml2js.Parser();
-    const jp = require('jsonpath');
+    const current = await parseReport(currentReportPath);
+    console.log(current)
+    const master = await parseReport(masterReportPath);
+    console.log(master)
 
-    const currentCov = new Map();
-    const coverageData = fs.readFileSync("target/scala-2.13/coverage-report/cobertura.xml", "utf8")
-
-    await xmlParser.parseStringPromise(coverageData)
-        .then(function (result) {
-            return jp
-                .nodes(result, '$.coverage..class')
-                .flatMap(p => p.value)
-                .map(n => {
-                    currentCov.set(n.$.filename,
-                        new ClassCoverage(
-                            n.$.name,
-                            new Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100)),
-                            new Coverage(100, 100)),
-                    )
-                });
-        }).catch(function (err) {
-            console.error(err)
-        });
-
-    console.log(currentCov)
-
-    const message = createMessage(
+    const message = await createCoverageComment(
         await changedInPRFiles(langs),
         // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
-        currentCov);
+        current,
+        master);
     console.log(message);
 
     // Get all comments we currently have...

@@ -45,7 +45,7 @@ jobs:
       - name: Report
         uses: ./
         with:
-          json_file: "benchmark.json"
-          comparison_json_file: "benchmark.json"
+          current_coverage: "target/scala-2.13/coverage-report/cobertura.xml"
+          master_coverage: "target/scala-2.13/coverage-report/cobertura.xml"
           token: ${{ secrets.GITHUB_TOKEN }}
           langs: "js,ts"

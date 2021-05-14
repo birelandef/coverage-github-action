@@ -1,12 +1,10 @@
 export class ClassCoverage {
     className: string;
-    currentPR: Coverage;
-    master: Coverage;
+    coverage: Coverage;
 
-    constructor(className: string, currentPR: Coverage, master: Coverage) {
+    constructor(className: string, currentPR: Coverage) {
         this.className = className;
-        this.currentPR = currentPR;
-        this.master = master;
+        this.coverage = currentPR;
     }
 }
 
