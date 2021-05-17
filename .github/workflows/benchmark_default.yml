@@ -19,9 +19,11 @@ jobs:
           git diff --name-only origin/master --output=master.diff  -- '*.scala'
         shell: bash
 
-      - name: Check aws
+      - name: Generate badge
         run: |
-          aws --version
+          export COLOR=blue
+          export
+          curl https://img.shields.io/badge/coverage-56%25-blue > badge.svg
         shell: bash
 
 #      - name: Upload changed files

@@ -143,6 +143,14 @@ async function run() {
             body: message,
         });
     }
+
+
+    await octokit.request('PATCH /repos/{owner}/{repo}/pulls/{pull_number}', {
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number:pullRequestNumber,
+        body: "![coverage](https://img.shields.io/badge/coverage-56%25-blue)"
+    })
 }
 
 run().catch((error) => core.setFailed("Workflow failed! " + error.message));
