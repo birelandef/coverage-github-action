@@ -1,25 +1,39 @@
-// import the fs module, which allows us to do filesystem operations
-// fs comes from nodejs, this is impossible with normal javascript
-// running in a browser.
-// You do not need to install this dependency, it is part of the
-// standard library.
-const fs = require("fs");
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 
 import simpleGit from 'simple-git';
-import {ClassCoverage, Coverage, SummaryReport} from './model';
+import {ClassCoverage, Color, Coverage, SummaryReport} from './model';
+
+const fs = require("fs");
+
 
 function createCoverageComment(changedClass, currentCov: SummaryReport, masterCov: Map<string, ClassCoverage>): string {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
+    /**
+     *         green       80-100
+     *         yellowgreen 60-80
+     *         yellow      40-60
+     *         orange      20-40
+     *         red         <20
+     * @param percent
+     */
+    function defineColor(percent: number): Color {
+        if (percent == 100)
+            return Color.BRIGHTGREEN;
+        if (percent >= 80)
+            return Color.GREEN;
+        if (percent >= 60)
+            return Color.YELLOWGREEN;
+        if (percent >= 40)
+            return Color.YELLOW;
+        if (percent >= 20)
+            return Color.ORANGE;
+        return Color.RED
+    }
     const percent = currentCov.overall.linePercent
-    console.log(currentCov.overall)
-    let color;
-    if (percent < 90)
-        color = "green";
-    else
-        color = "yellow";
+    const color = defineColor(currentCov.overall.linePercent)
+
     message += `![coverage](https://img.shields.io/badge/coverage-${percent}%25-${color})\n`
 
     message += "| Key | Current PR | Default Branch |\n";
@@ -92,9 +106,6 @@ async function parseReport(reportPath: string): Promise<SummaryReport> {
 async function run() {
     const context = github.context;
     // if (github.context.eventName !== "pull_request") {
-    //     // The core module on the other hand let's you get
-    //     // inputs or create outputs or control the action flow
-    //     // e.g. by producing a fatal error
     //     core.setFailed("Can only run on pull requests!");
     //     return;
     // } else {
@@ -113,7 +124,6 @@ async function run() {
 
     const current = await parseReport(currentReportPath);
     const master = await parseReport(masterReportPath);
-    // console.log(master)
 
     const message = await createCoverageComment(
         await changedInPRFiles(langs),
@@ -122,14 +132,11 @@ async function run() {
         master.classes)
     console.log(message);
 
-    // Get all comments we currently have...
-    // (this is an asynchronous function)
     const {data: comments} = await octokit.issues.listComments({
         ...repo,
         issue_number: pullRequestNumber,
     });
 
-    // ... and check if there is already a comment by us
     const comment = comments.find((comment) => {
         return (
             comment.user != null &&
@@ -139,14 +146,12 @@ async function run() {
         );
     });
 
-    // If yes, update that
     if (comment) {
         await octokit.issues.updateComment({
             ...repo,
             comment_id: comment.id,
             body: message,
         });
-        // if not, create a new comment
     } else {
         await octokit.issues.createComment({
             ...repo,
@@ -154,14 +159,6 @@ async function run() {
             body: message,
         });
     }
-
-
-    // await octokit.request('PATCH /repos/{owner}/{repo}/pulls/{pull_number}', {
-    //     owner: repo.owner,
-    //     repo: repo.repo,
-    //     pull_number: pullRequestNumber,
-    //     body: "![coverage](https://img.shields.io/badge/coverage-56%25-green)"
-    // })
 }
 
 run().catch((error) => core.setFailed("Workflow failed! " + error.message));

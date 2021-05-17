@@ -38,26 +38,37 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-// import the fs module, which allows us to do filesystem operations
-// fs comes from nodejs, this is impossible with normal javascript
-// running in a browser.
-// You do not need to install this dependency, it is part of the
-// standard library.
-const fs = __nccwpck_require__(5747);
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const simple_git_1 = __importDefault(__nccwpck_require__(6694));
 const model_1 = __nccwpck_require__(9599);
+const fs = __nccwpck_require__(5747);
 function createCoverageComment(changedClass, currentCov, masterCov) {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
+    /**
+     *         green       80-100
+     *         yellowgreen 60-80
+     *         yellow      40-60
+     *         orange      20-40
+     *         red         <20
+     * @param percent
+     */
+    function defineColor(percent) {
+        if (percent == 100)
+            return model_1.Color.BRIGHTGREEN;
+        if (percent >= 80)
+            return model_1.Color.GREEN;
+        if (percent >= 60)
+            return model_1.Color.YELLOWGREEN;
+        if (percent >= 40)
+            return model_1.Color.YELLOW;
+        if (percent >= 20)
+            return model_1.Color.ORANGE;
+        return model_1.Color.RED;
+    }
     const percent = currentCov.overall.linePercent;
-    console.log(currentCov.overall);
-    let color;
-    if (percent < 90)
-        color = "green";
-    else
-        color = "yellow";
+    const color = defineColor(currentCov.overall.linePercent);
     message += `![coverage](https://img.shields.io/badge/coverage-${percent}%25-${color})\n`;
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
@@ -124,9 +135,6 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const context = github.context;
         // if (github.context.eventName !== "pull_request") {
-        //     // The core module on the other hand let's you get
-        //     // inputs or create outputs or control the action flow
-        //     // e.g. by producing a fatal error
         //     core.setFailed("Can only run on pull requests!");
         //     return;
         // } else {
@@ -141,25 +149,19 @@ function run() {
         const octokit = github.getOctokit(githubToken);
         const current = yield parseReport(currentReportPath);
         const master = yield parseReport(masterReportPath);
-        // console.log(master)
         const message = yield createCoverageComment(yield changedInPRFiles(langs), 
         // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
         current, master.classes);
         console.log(message);
-        // Get all comments we currently have...
-        // (this is an asynchronous function)
         const { data: comments } = yield octokit.issues.listComments(Object.assign(Object.assign({}, repo), { issue_number: pullRequestNumber }));
-        // ... and check if there is already a comment by us
         const comment = comments.find((comment) => {
             return (comment.user != null &&
                 comment.user.login === "github-actions[bot]" &&
                 comment.body != null &&
                 comment.body.startsWith("## Coverage report\n"));
         });
-        // If yes, update that
         if (comment) {
             yield octokit.issues.updateComment(Object.assign(Object.assign({}, repo), { comment_id: comment.id, body: message }));
-            // if not, create a new comment
         }
         else {
             yield octokit.issues.createComment(Object.assign(Object.assign({}, repo), { issue_number: pullRequestNumber, body: message }));
@@ -177,7 +179,7 @@ run().catch((error) => core.setFailed("Workflow failed! " + error.message));
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Coverage = exports.ClassCoverage = exports.SummaryReport = void 0;
+exports.Color = exports.Coverage = exports.ClassCoverage = exports.SummaryReport = void 0;
 class SummaryReport {
     constructor(overall, classes) {
         this.classes = classes;
@@ -199,6 +201,15 @@ class Coverage {
     }
 }
 exports.Coverage = Coverage;
+var Color;
+(function (Color) {
+    Color["BRIGHTGREEN"] = "brigtgreen";
+    Color["YELLOWGREEN"] = "yellowgreen";
+    Color["GREEN"] = "green";
+    Color["YELLOW"] = "yellow";
+    Color["ORANGE"] = "orange";
+    Color["RED"] = "red";
+})(Color = exports.Color || (exports.Color = {}));
 
 
 /***/ }),

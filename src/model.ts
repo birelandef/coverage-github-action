@@ -1,8 +1,8 @@
-export class SummaryReport{
+export class SummaryReport {
     overall: Coverage;
     classes: Map<string, ClassCoverage>;
 
-    constructor(overall: Coverage, classes: Map<string, ClassCoverage>){
+    constructor(overall: Coverage, classes: Map<string, ClassCoverage>) {
         this.classes = classes;
         this.overall = overall;
     }
@@ -26,4 +26,13 @@ export class Coverage {
         this.linePercent = linePercent;
         this.branchPercent = branchPercent;
     }
+}
+
+export enum Color {
+    BRIGHTGREEN = "brigtgreen",
+    YELLOWGREEN = "yellowgreen",
+    GREEN = "green",
+    YELLOW = "yellow",
+    ORANGE = "orange",
+    RED = "red"
 }
