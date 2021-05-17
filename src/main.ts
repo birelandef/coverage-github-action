@@ -1,18 +1,40 @@
-// import the fs module, which allows us to do filesystem operations
-// fs comes from nodejs, this is impossible with normal javascript
-// running in a browser.
-// You do not need to install this dependency, it is part of the
-// standard library.
-const fs = require("fs");
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 
 import simpleGit from 'simple-git';
-import {ClassCoverage, Coverage} from './model';
+import {ClassCoverage, Color, Coverage, SummaryReport} from './model';
 
-function createCoverageComment(changedClass, currentCov: Map<string, ClassCoverage>, masterCov: Map<string, ClassCoverage>): string {
+const fs = require("fs");
+
+
+function createCoverageComment(changedClass, currentCov: SummaryReport, masterCov: Map<string, ClassCoverage>): string {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
+    /**
+     *         green       80-100
+     *         yellowgreen 60-80
+     *         yellow      40-60
+     *         orange      20-40
+     *         red         <20
+     * @param percent
+     */
+    function defineColor(percent: number): Color {
+        if (percent == 100)
+            return Color.BRIGHTGREEN;
+        if (percent >= 80)
+            return Color.GREEN;
+        if (percent >= 60)
+            return Color.YELLOWGREEN;
+        if (percent >= 40)
+            return Color.YELLOW;
+        if (percent >= 20)
+            return Color.ORANGE;
+        return Color.RED
+    }
+    const percent = currentCov.overall.linePercent
+    const color = defineColor(currentCov.overall.linePercent)
+
+    message += `![coverage](https://img.shields.io/badge/coverage-${percent}%25-${color})\n`
 
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
@@ -20,13 +42,13 @@ function createCoverageComment(changedClass, currentCov: Map<string, ClassCovera
     changedClass.forEach(clazz => {
 
         const cutPath = clazz.replace(regex, ``);
-        const inCurrent = currentCov.get(cutPath)
+        const inCurrent = currentCov.classes.get(cutPath)
         if (inCurrent) {
             message += `| ${inCurrent.className}`;
             message += `| ${inCurrent.coverage.linePercent.toFixed(2)}`;
             const inMaster = masterCov.get(cutPath)
             if (inMaster) {
-                if (inCurrent.coverage.linePercent < inMaster.coverage.linePercent )
+                if (inCurrent.coverage.linePercent < inMaster.coverage.linePercent)
                     message += `:small_red_triangle_down:`
                 message += `| ${inMaster.coverage.linePercent.toFixed(2)}`;
             } else {
@@ -51,38 +73,39 @@ async function changedInPRFiles(extensions: Array<string>) {
         return allFiles.filter(file => extensions.find(ext => file.endsWith(ext)))
 }
 
-async function parseReport(reportPath: string): Promise<Map<string, ClassCoverage>> {
-    const coverageMap = new Map();
-    const coverageData = fs.readFileSync(reportPath, "utf8")
-
+async function parseReport(reportPath: string): Promise<SummaryReport> {
     const xml2js = require('xml2js');
     const xmlParser = new xml2js.Parser();
     const jp = require('jsonpath');
 
-    await xmlParser.parseStringPromise(coverageData)
+    const coverageMap = new Map();
+    const coverageData = fs.readFileSync(reportPath, "utf8")
+
+    function parseCoverage(n): Coverage {
+        return new Coverage(Math.round(n['line-rate'] * 100), Math.round(n['branch-rate'] * 100))
+    }
+
+    const overall = await xmlParser.parseStringPromise(coverageData)
         .then(function (result) {
-            return jp
-                .nodes(result, '$.coverage..class')
+            jp.nodes(result, '$.coverage..class')
                 .flatMap(p => p.value)
                 .map(n => {
                     coverageMap.set(n.$.filename,
                         new ClassCoverage(
                             n.$.name,
-                            new Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100))
+                            parseCoverage(n.$)
                         ))
                 });
+            return parseCoverage(jp.value(result, '$.coverage').$)
         }).catch(function (err) {
             console.error(err)
         });
-    return coverageMap;
+    return new SummaryReport(overall, coverageMap);
 }
 
 async function run() {
     const context = github.context;
     // if (github.context.eventName !== "pull_request") {
-    //     // The core module on the other hand let's you get
-    //     // inputs or create outputs or control the action flow
-    //     // e.g. by producing a fatal error
     //     core.setFailed("Can only run on pull requests!");
     //     return;
     // } else {
@@ -100,25 +123,20 @@ async function run() {
     const octokit = github.getOctokit(githubToken);
 
     const current = await parseReport(currentReportPath);
-    console.log(current)
     const master = await parseReport(masterReportPath);
-    console.log(master)
 
     const message = await createCoverageComment(
         await changedInPRFiles(langs),
         // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
         current,
-        master);
+        master.classes)
     console.log(message);
 
-    // Get all comments we currently have...
-    // (this is an asynchronous function)
     const {data: comments} = await octokit.issues.listComments({
         ...repo,
         issue_number: pullRequestNumber,
     });
 
-    // ... and check if there is already a comment by us
     const comment = comments.find((comment) => {
         return (
             comment.user != null &&
@@ -128,14 +146,12 @@ async function run() {
         );
     });
 
-    // If yes, update that
     if (comment) {
         await octokit.issues.updateComment({
             ...repo,
             comment_id: comment.id,
             body: message,
         });
-        // if not, create a new comment
     } else {
         await octokit.issues.createComment({
             ...repo,
