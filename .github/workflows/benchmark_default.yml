@@ -23,7 +23,7 @@ jobs:
         run: |
           export COLOR=blue
           export
-          curl https://img.shields.io/badge/coverage-56%25-blue > badge.svg
+          curl https://img.shields.io/badge/coverage-56%25-green > badge.svg
         shell: bash
 
 #      - name: Upload changed files

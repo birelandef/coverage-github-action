@@ -158,7 +158,7 @@ function run() {
             owner: repo.owner,
             repo: repo.repo,
             pull_number: pullRequestNumber,
-            body: "![coverage](https://img.shields.io/badge/coverage-56%25-blue)"
+            body: "![coverage](badge.svg)"
         });
     });
 }
