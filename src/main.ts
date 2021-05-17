@@ -10,9 +10,15 @@ import * as github from "@actions/github";
 import simpleGit from 'simple-git';
 import {ClassCoverage, Coverage} from './model';
 
-function createCoverageComment(changedClass, currentCov: Map<string, ClassCoverage>, masterCov: Map<string, ClassCoverage>): string {
+function createCoverageComment(changedClass, currentCov: Map<string, ClassCoverage>, masterCov: Map<string, ClassCoverage>, overall: Coverage): string {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
+    let color;
+    if (overall.linePercent > 90)
+        color = "green";
+    else
+        color = "yellow";
+    message += `![coverage](https://img.shields.io/badge/coverage-${overall.linePercent}%25-${color})`
 
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
@@ -26,7 +32,7 @@ function createCoverageComment(changedClass, currentCov: Map<string, ClassCovera
             message += `| ${inCurrent.coverage.linePercent.toFixed(2)}`;
             const inMaster = masterCov.get(cutPath)
             if (inMaster) {
-                if (inCurrent.coverage.linePercent < inMaster.coverage.linePercent )
+                if (inCurrent.coverage.linePercent < inMaster.coverage.linePercent)
                     message += `:small_red_triangle_down:`
                 message += `| ${inMaster.coverage.linePercent.toFixed(2)}`;
             } else {
@@ -51,30 +57,35 @@ async function changedInPRFiles(extensions: Array<string>) {
         return allFiles.filter(file => extensions.find(ext => file.endsWith(ext)))
 }
 
-async function parseReport(reportPath: string): Promise<Map<string, ClassCoverage>> {
-    const coverageMap = new Map();
-    const coverageData = fs.readFileSync(reportPath, "utf8")
-
+async function parseReport(reportPath: string): Promise<[Map<string, ClassCoverage>, Coverage]> {
     const xml2js = require('xml2js');
     const xmlParser = new xml2js.Parser();
     const jp = require('jsonpath');
 
-    await xmlParser.parseStringPromise(coverageData)
+    const coverageMap = new Map();
+    const coverageData = fs.readFileSync(reportPath, "utf8")
+
+    function parseCoverage(n): Coverage {
+        return new Coverage(Math.round(n['line-rate'] * 100), Math.round(n['branch-rate'] * 100))
+    }
+
+    const overall = await xmlParser.parseStringPromise(coverageData)
         .then(function (result) {
-            return jp
+            jp
                 .nodes(result, '$.coverage..class')
                 .flatMap(p => p.value)
                 .map(n => {
                     coverageMap.set(n.$.filename,
                         new ClassCoverage(
                             n.$.name,
-                            new Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100))
+                            parseCoverage(n.$)
                         ))
                 });
+            return jp.nodes(result, '$.coverage').map(p => p.value.$).map(n => parseCoverage(n));
         }).catch(function (err) {
             console.error(err)
         });
-    return coverageMap;
+    return [coverageMap, overall];
 }
 
 async function run() {
@@ -107,8 +118,9 @@ async function run() {
     const message = await createCoverageComment(
         await changedInPRFiles(langs),
         // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
-        current,
-        master);
+        current[0],
+        master[0],
+        current[1]);
     console.log(message);
 
     // Get all comments we currently have...
@@ -145,12 +157,12 @@ async function run() {
     }
 
 
-    await octokit.request('PATCH /repos/{owner}/{repo}/pulls/{pull_number}', {
-        owner: repo.owner,
-        repo: repo.repo,
-        pull_number:pullRequestNumber,
-        body: "![coverage](badge.svg)"
-    })
+    // await octokit.request('PATCH /repos/{owner}/{repo}/pulls/{pull_number}', {
+    //     owner: repo.owner,
+    //     repo: repo.repo,
+    //     pull_number: pullRequestNumber,
+    //     body: "![coverage](https://img.shields.io/badge/coverage-56%25-green)"
+    // })
 }
 
 run().catch((error) => core.setFailed("Workflow failed! " + error.message));

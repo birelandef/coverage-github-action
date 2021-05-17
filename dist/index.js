@@ -48,9 +48,15 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const simple_git_1 = __importDefault(__nccwpck_require__(6694));
 const model_1 = __nccwpck_require__(9599);
-function createCoverageComment(changedClass, currentCov, masterCov) {
+function createCoverageComment(changedClass, currentCov, masterCov, overall) {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
+    let color;
+    if (overall.linePercent > 90)
+        color = "green";
+    else
+        color = "yellow";
+    message += `![coverage](https://img.shields.io/badge/coverage-${overall.linePercent}%25-${color})`;
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
     changedClass.forEach(clazz => {
@@ -89,23 +95,27 @@ function changedInPRFiles(extensions) {
 }
 function parseReport(reportPath) {
     return __awaiter(this, void 0, void 0, function* () {
-        const coverageMap = new Map();
-        const coverageData = fs.readFileSync(reportPath, "utf8");
         const xml2js = __nccwpck_require__(6189);
         const xmlParser = new xml2js.Parser();
         const jp = __nccwpck_require__(4378);
-        yield xmlParser.parseStringPromise(coverageData)
+        const coverageMap = new Map();
+        const coverageData = fs.readFileSync(reportPath, "utf8");
+        function parseCoverage(n) {
+            return new model_1.Coverage(Math.round(n['line-rate'] * 100), Math.round(n['branch-rate'] * 100));
+        }
+        const overall = yield xmlParser.parseStringPromise(coverageData)
             .then(function (result) {
-            return jp
+            jp
                 .nodes(result, '$.coverage..class')
                 .flatMap(p => p.value)
                 .map(n => {
-                coverageMap.set(n.$.filename, new model_1.ClassCoverage(n.$.name, new model_1.Coverage(Math.round(n.$['line-rate'] * 100), Math.round(n.$['branch-rate'] * 100))));
+                coverageMap.set(n.$.filename, new model_1.ClassCoverage(n.$.name, parseCoverage(n.$)));
             });
+            return jp.nodes(result, '$.coverage').map(p => p.value.$).map(n => parseCoverage(n));
         }).catch(function (err) {
             console.error(err);
         });
-        return coverageMap;
+        return [coverageMap, overall];
     });
 }
 function run() {
@@ -134,7 +144,7 @@ function run() {
         console.log(master);
         const message = yield createCoverageComment(yield changedInPRFiles(langs), 
         // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
-        current, master);
+        current[0], master[0], current[1]);
         console.log(message);
         // Get all comments we currently have...
         // (this is an asynchronous function)
@@ -154,12 +164,6 @@ function run() {
         else {
             yield octokit.issues.createComment(Object.assign(Object.assign({}, repo), { issue_number: pullRequestNumber, body: message }));
         }
-        yield octokit.request('PATCH /repos/{owner}/{repo}/pulls/{pull_number}', {
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number: pullRequestNumber,
-            body: "![coverage](badge.svg)"
-        });
     });
 }
 run().catch((error) => core.setFailed("Workflow failed! " + error.message));
