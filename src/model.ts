@@ -1,3 +1,13 @@
+export class SummaryReport{
+    overall: Coverage;
+    classes: Map<string, ClassCoverage>;
+
+    constructor(overall: Coverage, classes: Map<string, ClassCoverage>){
+        this.classes = classes;
+        this.overall = overall;
+    }
+}
+
 export class ClassCoverage {
     className: string;
     coverage: Coverage;

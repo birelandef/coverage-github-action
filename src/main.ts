@@ -8,17 +8,19 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 
 import simpleGit from 'simple-git';
-import {ClassCoverage, Coverage} from './model';
+import {ClassCoverage, Coverage, SummaryReport} from './model';
 
-function createCoverageComment(changedClass, currentCov: Map<string, ClassCoverage>, masterCov: Map<string, ClassCoverage>, overall: Coverage): string {
+function createCoverageComment(changedClass, currentCov: SummaryReport, masterCov: Map<string, ClassCoverage>): string {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
+    const percent = currentCov.overall.linePercent
+    console.log(currentCov.overall)
     let color;
-    if (overall.linePercent > 90)
+    if (percent < 90)
         color = "green";
     else
         color = "yellow";
-    message += `![coverage](https://img.shields.io/badge/coverage-${overall.linePercent}%25-${color})`
+    message += `![coverage](https://img.shields.io/badge/coverage-${percent}%25-${color})\n`
 
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
@@ -26,7 +28,7 @@ function createCoverageComment(changedClass, currentCov: Map<string, ClassCovera
     changedClass.forEach(clazz => {
 
         const cutPath = clazz.replace(regex, ``);
-        const inCurrent = currentCov.get(cutPath)
+        const inCurrent = currentCov.classes.get(cutPath)
         if (inCurrent) {
             message += `| ${inCurrent.className}`;
             message += `| ${inCurrent.coverage.linePercent.toFixed(2)}`;
@@ -57,7 +59,7 @@ async function changedInPRFiles(extensions: Array<string>) {
         return allFiles.filter(file => extensions.find(ext => file.endsWith(ext)))
 }
 
-async function parseReport(reportPath: string): Promise<[Map<string, ClassCoverage>, Coverage]> {
+async function parseReport(reportPath: string): Promise<SummaryReport> {
     const xml2js = require('xml2js');
     const xmlParser = new xml2js.Parser();
     const jp = require('jsonpath');
@@ -71,8 +73,7 @@ async function parseReport(reportPath: string): Promise<[Map<string, ClassCovera
 
     const overall = await xmlParser.parseStringPromise(coverageData)
         .then(function (result) {
-            jp
-                .nodes(result, '$.coverage..class')
+            jp.nodes(result, '$.coverage..class')
                 .flatMap(p => p.value)
                 .map(n => {
                     coverageMap.set(n.$.filename,
@@ -81,11 +82,11 @@ async function parseReport(reportPath: string): Promise<[Map<string, ClassCovera
                             parseCoverage(n.$)
                         ))
                 });
-            return jp.nodes(result, '$.coverage').map(p => p.value.$).map(n => parseCoverage(n));
+            return parseCoverage(jp.value(result, '$.coverage').$)
         }).catch(function (err) {
             console.error(err)
         });
-    return [coverageMap, overall];
+    return new SummaryReport(overall, coverageMap);
 }
 
 async function run() {
@@ -111,16 +112,14 @@ async function run() {
     const octokit = github.getOctokit(githubToken);
 
     const current = await parseReport(currentReportPath);
-    console.log(current)
     const master = await parseReport(masterReportPath);
-    console.log(master)
+    // console.log(master)
 
     const message = await createCoverageComment(
         await changedInPRFiles(langs),
         // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
-        current[0],
-        master[0],
-        current[1]);
+        current,
+        master.classes)
     console.log(message);
 
     // Get all comments we currently have...

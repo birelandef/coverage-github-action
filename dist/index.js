@@ -48,20 +48,22 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const simple_git_1 = __importDefault(__nccwpck_require__(6694));
 const model_1 = __nccwpck_require__(9599);
-function createCoverageComment(changedClass, currentCov, masterCov, overall) {
+function createCoverageComment(changedClass, currentCov, masterCov) {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
+    const percent = currentCov.overall.linePercent;
+    console.log(currentCov.overall);
     let color;
-    if (overall.linePercent > 90)
+    if (percent < 90)
         color = "green";
     else
         color = "yellow";
-    message += `![coverage](https://img.shields.io/badge/coverage-${overall.linePercent}%25-${color})`;
+    message += `![coverage](https://img.shields.io/badge/coverage-${percent}%25-${color})\n`;
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
     changedClass.forEach(clazz => {
         const cutPath = clazz.replace(regex, ``);
-        const inCurrent = currentCov.get(cutPath);
+        const inCurrent = currentCov.classes.get(cutPath);
         if (inCurrent) {
             message += `| ${inCurrent.className}`;
             message += `| ${inCurrent.coverage.linePercent.toFixed(2)}`;
@@ -105,17 +107,16 @@ function parseReport(reportPath) {
         }
         const overall = yield xmlParser.parseStringPromise(coverageData)
             .then(function (result) {
-            jp
-                .nodes(result, '$.coverage..class')
+            jp.nodes(result, '$.coverage..class')
                 .flatMap(p => p.value)
                 .map(n => {
                 coverageMap.set(n.$.filename, new model_1.ClassCoverage(n.$.name, parseCoverage(n.$)));
             });
-            return jp.nodes(result, '$.coverage').map(p => p.value.$).map(n => parseCoverage(n));
+            return parseCoverage(jp.value(result, '$.coverage').$);
         }).catch(function (err) {
             console.error(err);
         });
-        return [coverageMap, overall];
+        return new model_1.SummaryReport(overall, coverageMap);
     });
 }
 function run() {
@@ -139,12 +140,11 @@ function run() {
         const pullRequestNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
         const octokit = github.getOctokit(githubToken);
         const current = yield parseReport(currentReportPath);
-        console.log(current);
         const master = yield parseReport(masterReportPath);
-        console.log(master);
+        // console.log(master)
         const message = yield createCoverageComment(yield changedInPRFiles(langs), 
         // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
-        current[0], master[0], current[1]);
+        current, master.classes);
         console.log(message);
         // Get all comments we currently have...
         // (this is an asynchronous function)
@@ -177,7 +177,14 @@ run().catch((error) => core.setFailed("Workflow failed! " + error.message));
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Coverage = exports.ClassCoverage = void 0;
+exports.Coverage = exports.ClassCoverage = exports.SummaryReport = void 0;
+class SummaryReport {
+    constructor(overall, classes) {
+        this.classes = classes;
+        this.overall = overall;
+    }
+}
+exports.SummaryReport = SummaryReport;
 class ClassCoverage {
     constructor(className, currentPR) {
         this.className = className;
