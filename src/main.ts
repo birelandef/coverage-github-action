@@ -149,7 +149,7 @@ async function run() {
         owner: repo.owner,
         repo: repo.repo,
         pull_number:pullRequestNumber,
-        body: "![coverage](badge.svg)"
+        body: "![coverage](/badge.svg)"
     })
 }
 
