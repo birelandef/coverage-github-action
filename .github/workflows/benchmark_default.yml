@@ -1,7 +1,15 @@
 # Workflow to benchmark the default branch and store the results
 # as an artifact.
 name: Benchmark the default branch
-on: [pull_request]
+on:
+  workflow_dispatch:
+    inputs:
+      current_coverage:
+        default: "/Users/a-sophie/IdeaProjects/coverage-github-action/target/scala-2.13/coverage-report/cobertura.xml"
+      master_coverage:
+        default: "/Users/a-sophie/IdeaProjects/coverage-github-action/target/scala-2.13/coverage-report/cobertura.xml"
+  pull_request_target:
+#  pull_request:
 
 # A workflow consists of multiple jobs
 jobs:
