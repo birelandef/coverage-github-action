@@ -132,33 +132,33 @@ async function run() {
         master.classes)
     console.log(message);
 
-    const {data: comments} = await octokit.issues.listComments({
-        ...repo,
-        issue_number: pullRequestNumber,
-    });
-
-    const comment = comments.find((comment) => {
-        return (
-            comment.user != null &&
-            comment.user.login === "github-actions[bot]" &&
-            comment.body != null &&
-            comment.body.startsWith("## Coverage report\n")
-        );
-    });
-
-    if (comment) {
-        await octokit.issues.updateComment({
-            ...repo,
-            comment_id: comment.id,
-            body: message,
-        });
-    } else {
-        await octokit.issues.createComment({
-            ...repo,
-            issue_number: pullRequestNumber,
-            body: message,
-        });
-    }
+    // const {data: comments} = await octokit.issues.listComments({
+    //     ...repo,
+    //     issue_number: pullRequestNumber,
+    // });
+    //
+    // const comment = comments.find((comment) => {
+    //     return (
+    //         comment.user != null &&
+    //         comment.user.login === "github-actions[bot]" &&
+    //         comment.body != null &&
+    //         comment.body.startsWith("## Coverage report\n")
+    //     );
+    // });
+    //
+    // if (comment) {
+    //     await octokit.issues.updateComment({
+    //         ...repo,
+    //         comment_id: comment.id,
+    //         body: message,
+    //     });
+    // } else {
+    //     await octokit.issues.createComment({
+    //         ...repo,
+    //         issue_number: pullRequestNumber,
+    //         body: message,
+    //     });
+    // }
 }
 
 run().catch((error) => core.setFailed("Workflow failed! " + error.message));
