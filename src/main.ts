@@ -38,7 +38,7 @@ function createCoverageComment(changedClass, currentCov: SummaryReport, masterCo
 
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
-    // console.log(changedClass)
+    console.log(changedClass)
     changedClass.forEach(clazz => {
 
         const cutPath = clazz.replace(regex, ``);
