@@ -10,6 +10,7 @@ const fs = require("fs");
 function createCoverageComment(changedClass, currentCov: SummaryReport, masterCov: Map<string, ClassCoverage>): string {
     const regex = /.*\/src\//s;
     let message = "## Coverage report\n";
+
     /**
      *         green       80-100
      *         yellowgreen 60-80
@@ -31,6 +32,7 @@ function createCoverageComment(changedClass, currentCov: SummaryReport, masterCo
             return Color.ORANGE;
         return Color.RED
     }
+
     const percent = currentCov.overall.linePercent
     const color = defineColor(currentCov.overall.linePercent)
 
@@ -38,7 +40,7 @@ function createCoverageComment(changedClass, currentCov: SummaryReport, masterCo
 
     message += "| Key | Current PR | Default Branch |\n";
     message += "| :--- | :---: | :---: |\n";
-    console.log(changedClass)
+    // console.log(changedClass)
     changedClass.forEach(clazz => {
 
         const cutPath = clazz.replace(regex, ``);
@@ -105,13 +107,14 @@ async function parseReport(reportPath: string): Promise<SummaryReport> {
 
 async function run() {
     const context = github.context;
+    // const context = {repo: "coverage-github-action", payload: {pull_request: 13}, owner: "birelandef"}
     // if (github.context.eventName !== "pull_request") {
     //     core.setFailed("Can only run on pull requests!");
     //     return;
     // } else {
     //  console.error(`Can't apply action to ${github.context.eventName}: only for PR`)
     // }
-
+    console.log(context)
     const githubToken = core.getInput("token");
     const currentReportPath = core.getInput("current_coverage", {required: true});
     const masterReportPath = core.getInput("master_coverage", {required: true});
