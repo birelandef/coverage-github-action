@@ -8,7 +8,7 @@ on:
         default: "target/scala-2.13/coverage-report/cobertura.xml"
       master_coverage:
         default: "target/scala-2.13/coverage-report/cobertura.xml"
-#  pull_request_target:
+  #  pull_request_target:
   pull_request:
 
 # A workflow consists of multiple jobs
@@ -22,12 +22,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Dump GitHub context
-#        env:
-#          GITHUB_CONTEXT: ${{ toJSON(github) }}
-#          run: echo "$GITHUB_CONTEXT"
-          run: echo "ololo"
-
       - name: Changed files
         run: |
           git diff --name-only origin/master --output=master.diff  -- '*.scala'
@@ -40,23 +34,23 @@ jobs:
           ls -la
         shell: bash
 
-#      - name: Upload changed files
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: changed_files
-#          path: master.diff
-#      - name: Configure AWS Credentials
-#        uses: aws-actions/configure-aws-credentials@v1
-#        with:
-#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#          # aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} # if you have/need it
-#          aws-region: aws-global
-#
-#      - name: Explore
-#        run: |
-#          aws help
-#        shell: bash
+      #      - name: Upload changed files
+      #        uses: actions/upload-artifact@v2
+      #        with:
+      #          name: changed_files
+      #          path: master.diff
+      #      - name: Configure AWS Credentials
+      #        uses: aws-actions/configure-aws-credentials@v1
+      #        with:
+      #          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #          # aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} # if you have/need it
+      #          aws-region: aws-global
+      #
+      #      - name: Explore
+      #        run: |
+      #          aws help
+      #        shell: bash
 
       - name: Report
         uses: ./
