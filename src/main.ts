@@ -130,7 +130,6 @@ async function run() {
         // ["project/ModulePlugin.scala", "services/vasgen/core/src/vasgen/core/saas/FieldMappingReader.scala"],
         current,
         master.classes)
-    console.log(message);
 
     const {data: comments} = await octokit.issues.listComments({
         ...repo,
