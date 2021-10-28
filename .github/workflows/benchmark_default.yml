@@ -8,8 +8,8 @@ on:
         default: "target/scala-2.13/coverage-report/cobertura.xml"
       master_coverage:
         default: "target/scala-2.13/coverage-report/cobertura.xml"
-  pull_request_target:
-#  pull_request:
+#  pull_request_target:
+  pull_request:
 
 # A workflow consists of multiple jobs
 jobs:
