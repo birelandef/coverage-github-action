@@ -17,11 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Run the coverage
     steps:
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
-          run: echo "$GITHUB_CONTEXT"
-
       - name: Checkout
         uses: actions/checkout@v2
         with:
